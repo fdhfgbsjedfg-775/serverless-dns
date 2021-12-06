@@ -7,7 +7,7 @@
 
 [Copy here!](https://serverless-dns.siammehedi1234.workers.dev/config) (Same story as deno deploy)
 
-## Privacy notice: You're DNS requests wont be sold (or shared) to third parties and I may not have the right to take a look at your DNS requests, either way, I cant see the logs of your dns queries anyway because the resolvers can't, this may be useful if I ever changed my mind.
+Privacy notice: You're DNS requests wont be sold (or shared) to third parties and I may not have the right to take a look at your DNS requests, either way, I cant see the logs of your dns queries anyway because the resolvers can't, this may be useful if I ever changed my mind.
 
 ## Setting up you're own DNS resolver in case you think im sus (this step by step tutorial is provided by the repositery I forked)
 
