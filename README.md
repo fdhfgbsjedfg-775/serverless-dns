@@ -1,3 +1,17 @@
+## My DNS resolver addresses (You're free to use them)
+### Deno Deployed resolver (recommended since CF has a request limit per day)
+
+[Copy here!](https://serverless-dns.deno.dev/config) (copy the link into your browser and load it up, don't immediately change the dns resolver to this address or it will not work)
+
+### Cloudflare resolver (faster but may hit request limit)
+
+[Copy here!](https://serverless-dns.siammehedi1234.workers.dev/config) (Same story as deno deploy)
+
+## Privacy notice: You're DNS requests wont be sold (or shared) to third parties and I may not have the right to take a look at your DNS requests, either way, I cant see the logs of your dns queries anyway because the resolvers can't, this may be useful if I ever changed my mind.
+
+## Setting up you're own DNS resolver in case you think im sus (this step by step tutorial is provided by the repositery I forked)
+
+
 This is free, open source RethinkDNS serverless DoH and DoT resolvers with custom blocklists
 that can be hosted on cloudflare, fly.io and deno-deploy. This initiative is to provide first level of
 anti-censorship and data privacy to every person on the earth.
