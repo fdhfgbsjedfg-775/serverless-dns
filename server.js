@@ -7,22 +7,24 @@
  */
 
 import { TLS_CRT, TLS_KEY } from "./helpers/node/config.js";
-import net, { isIPv6 } from "net";
-import * as proxyProtocolParser from "proxy-protocol-js";
+import net, { isIPv6, Socket } from "net";
+import { V1ProxyProtocol } from "proxy-protocol-js";
 import * as tls from "tls";
 import * as http2 from "http2";
 import { handleRequest } from "./index.js";
 import { encodeUint8ArrayBE, sleep } from "./helpers/util.js";
 import * as log from "./helpers/log.js";
 
+// Ports which the services are exposed on. Corresponds to fly.toml ports.
 const DOT_ENTRY_PORT = 10000;
-const DOT_PROXY_PROTO_ENTRY_PORT = DOT_ENTRY_PORT + 1;
 const DOH_ENTRY_PORT = 8080;
 
 const DOT_IS_PROXY_PROTO = eval(`process.env.DOT_HAS_PROXY_PROTO`);
-const DOT_PROXY_PORT = DOT_ENTRY_PORT;
+const DOT_PROXY_PORT = DOT_ENTRY_PORT; // Unused if proxy proto is disabled
 
-const DOT_PORT = DOT_IS_PROXY_PROTO ? DOT_PROXY_PROTO_ENTRY_PORT : DOT_ENTRY_PORT;
+const DOT_PORT = DOT_IS_PROXY_PROTO
+  ? DOT_ENTRY_PORT + 1 // Bump DOT port to allow entry via proxy proto port.
+  : DOT_ENTRY_PORT;
 const DOH_PORT = DOH_ENTRY_PORT;
 
 const tlsOptions = {
@@ -32,10 +34,12 @@ const tlsOptions = {
 
 const minDNSPacketSize = 12 + 5;
 const maxDNSPacketSize = 4096;
+
+// A dns message over TCP stream has a header indicating length.
 const dnsHeaderSize = 2;
 
-let DNS_RG_RE = null; // regular dns name match
-let DNS_WC_RE = null; // wildcard dns name match
+let OUR_RG_DN_RE = null; // regular dns name match
+let OUR_WC_DN_RE = null; // wildcard dns name match
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,76 +65,88 @@ function up(server, addr) {
 }
 
 function close(sock) {
-  try {
-    if (sock && !sock.destroyed) sock.destroy();
-  } catch (ignore) { }
+  sock.destroy();
 }
 
-function proxy(sin, sout) {
-  if (sin.destroyed || sout.destroyed) return false;
-  sin.pipe(sout);
-  sout.pipe(sin);
+/**
+ * Creates a duplex pipe between `a` and `b` sockets.
+ * @param {Socket} a
+ * @param {Socket} b
+ * @returns - true if pipe created, false if error
+ */
+function proxySockets(a, b) {
+  if (a.destroyed || b.destroyed) return false;
+  a.pipe(b);
+  b.pipe(a);
   return true;
 }
 
 /**
- * Proxies connection to DOT server, retrieving proxy proto header if allowed
- * @param {net.Socket} ppsock
+ * Proxies connection to DOT server, retrieving proxy proto header.
+ * @param {net.Socket} clientSocket
  */
-function serveDoTProxyProto(ppsock) {
-  // Alternatively, presence of proxy proto header in the first tcp segment
-  // could be checked
-  let pphandled = false;
-  log.d("--> new pp conn");
+function serveDoTProxyProto(clientSocket) {
+  let ppHandled = false;
+  log.d("--> new client Connection");
 
-  const dotsock = net.connect(DOT_PORT, () => {
-    log.d("DoT ready");
+  const dotSock = net.connect(DOT_PORT, () => {
+    log.d("DoT socket ready");
+  });
+
+  dotSock.on("error", (e) => {
+    console.log("DoT socket error, closing client connection");
+    close(clientSocket);
+    close(dotSock);
   });
 
   function handleProxyProto(buf) {
-    if (pphandled) {
-      log.w("proxyproto already handled... len(buf)", buf.byteLength)
-      return;
-    }
+    // Data from only first tcp segment is to be consumed to get proxy proto.
+    // After extracting proxy proto, a duplex pipe is created to DoT server.
+    // So, further tcp segments return here.
+    if (ppHandled) return;
 
     let chunk = buf.toString("ascii");
     let delim = chunk.indexOf("\r\n") + 2; // CRLF = \x0D \x0A
-    // FIXME: Explain why further tcp segments need not be checked
-    pphandled = true;
+    ppHandled = true;
 
     if (delim < 0) {
       log.e("proxy proto header invalid / not found =>", chunk);
-      ppclose();
+      close(clientSocket);
+      close(dotSock);
       return;
     }
 
     try {
       // TODO: admission control
-      const proto = proxyProtocolParser.V1ProxyProtocol.parse(
-        chunk.slice(0, delim)
-      );
+      const proto = V1ProxyProtocol.parse(chunk.slice(0, delim));
       log.d(`--> [${proto.source.ipAddress}]:${proto.source.port}`);
 
       // remaining data from first tcp segment
-      let ok = !dotsock.destroyed && dotsock.write(buf.slice(delim));
-      if (!ok) throw new Error(proto + " err dotsock write len(buf): " + buf.byteLength)
+      let ok = !dotSock.destroyed && dotSock.write(buf.slice(delim));
+      if (!ok)
+        throw new Error(
+          proto + " err dotSock write len(buf): " + buf.byteLength
+        );
 
-      ok = proxy(ppsock, dotsock);
-      if (!ok) throw new Error(proto + " err ppsock <> dotsock proxy")
+      ok = proxySockets(clientSocket, dotSock);
+      if (!ok) throw new Error(proto + " err clientSock <> dotSock proxy");
     } catch (e) {
       log.w(e);
-      ppclose();
+      close(clientSocket);
+      close(dotSock);
       return;
     }
   }
 
-  function ppclose() {
-    close(ppsock);
-    close(dotsock);
-  }
-
-  ppsock.on("close", ppclose);
-  ppsock.on("data", handleProxyProto);
+  clientSocket.on("data", handleProxyProto);
+  clientSocket.on("close", () => {
+    close(dotSock);
+  });
+  clientSocket.on("error", (e) => {
+    log.w("Client socket error, closing connection");
+    close(clientSocket);
+    close(dotSock);
+  });
 }
 
 function recycleBuffer(b) {
@@ -147,29 +163,34 @@ function makeScratchBuffer() {
   const qlenBufOffset = recycleBuffer(qlenBuf);
 
   return {
-    "qlenBuf" : qlenBuf,
-    "qlenBufOffset" : qlenBufOffset,
-    "qBuf" : null,
-    "qBufOffset" : 0
+    qlenBuf: qlenBuf,
+    qlenBufOffset: qlenBufOffset,
+    qBuf: null,
+    qBufOffset: 0,
   };
 }
 
-function initCertRegexesIfNeeded(socket) {
-  if (DNS_RG_RE || DNS_WC_RE) return;
+/**
+ * Get RegEx's matching dns names of a CA certificate.
+ * A non capturing RegEx is returned if no DNS names are found.
+ * @param {tls.TLSSocket} socket - TLS socket to get CA certificate from.
+ * @returns [RegEx, RegEx] - [regular, wildcard]
+ */
+function getDnRE(socket) {
+  const SAN_DNS_PREFIX = "DNS:";
+  const SAN = socket.getCertificate().subjectaltname;
 
-  const TLS_SAN_PREFIX = "DNS:"
-  const TLS_SAN = socket.getCertificate().subjectaltname;
-  // compute subject-alt-names (SAN) regexes
+  // Compute DNS RegExs from TLS SAN (subject-alt-names)
   // for max.rethinkdns.com SANs, see: https://crt.sh/?id=5708836299
-  const regexes = TLS_SAN.split(",").reduce(
+  const RegExs = SAN.split(",").reduce(
     (arr, entry) => {
-
-      // entry => DNS:*max.rethinkdns.com
-      // u => 0
-      // sliced => *max.rethinkdns.com
-      const u = entry.indexOf(TLS_SAN_PREFIX);
-      if (u < 0) return arr;
-      entry = entry.slice(u + TLS_SAN_PREFIX.length).trim();
+      entry = entry.trim();
+      // Ignore non-DNS entries
+      const u = entry.indexOf(SAN_DNS_PREFIX);
+      if (u !== 0) return arr;
+      // entry => DNS:*.max.rethinkdns.com
+      // sliced => *.max.rethinkdns.com
+      entry = entry.slice(SAN_DNS_PREFIX.length);
 
       // d => *\\.max\\.rethinkdns\\.com
       // wc => true
@@ -177,21 +198,31 @@ function initCertRegexesIfNeeded(socket) {
       // match => [a-z0-9-_]*\\.max\\.rethinkdns\\.com
       const d = entry.replace(/\./g, "\\.");
       const wc = d.startsWith("*");
-      const pos = (wc) ? 1 : 0;
-      const match = (wc) ? "[a-z0-9-_]" + d : d;
+      const pos = wc ? 1 : 0;
+      const match = wc ? "[a-z0-9-_]" + d : d;
 
       arr[pos].push("(^" + match + "$)");
 
       return arr;
-    }, [[], []]);
+    },
+    // [[Regular matches], [Wildcard matches]]
+    [[], []]
+  );
 
-  DNS_RG_RE = new RegExp(regexes[0].join("|"), "i");
-  DNS_WC_RE = new RegExp(regexes[1].join("|"), "i");
-  log.d(DNS_RG_RE, DNS_WC_RE);
+  const rgDnRE = new RegExp(RegExs[0].join("|"), "i");
+  const wcDnRE = new RegExp(RegExs[1].join("|"), "i");
+  log.i(rgDnRE, wcDnRE);
+  return [rgDnRE, wcDnRE];
 }
 
-function extractMetadataFromSni(socket) {
-  initCertRegexesIfNeeded(socket);
+/**
+ * Gets flag and hostname from TLS socket.
+ * @param {tls.TLSSocket} socket - TLS socket to get SNI from.
+ * @returns [flag, hostname]
+ */
+function getMetadataFromSni(socket) {
+  if (!OUR_RG_DN_RE || !OUR_WC_DN_RE)
+    [OUR_RG_DN_RE, OUR_WC_DN_RE] = getDnRE(socket);
 
   let flag = null;
   let host = null;
@@ -201,8 +232,8 @@ function extractMetadataFromSni(socket) {
     return [flag, host];
   }
 
-  const isWc = DNS_WC_RE && DNS_WC_RE.test(sni);
-  const isReg = DNS_RG_RE && DNS_RG_RE.test(sni);
+  const isWc = OUR_WC_DN_RE.test(sni);
+  const isReg = OUR_RG_DN_RE.test(sni);
 
   if (isWc) {
     // 1-flag.max.rethinkdns.com => ["1-flag", "max", "rethinkdns", "com"]
@@ -226,7 +257,7 @@ function extractMetadataFromSni(socket) {
  * @param {tls.TLSSocket} socket
  */
 function serveTLS(socket) {
-  const [flag, host] = extractMetadataFromSni(socket)
+  const [flag, host] = getMetadataFromSni(socket);
   if (host === null) {
     close(socket);
     log.w("hostname not found, abort session");
@@ -236,20 +267,23 @@ function serveTLS(socket) {
   const sb = makeScratchBuffer();
 
   socket.on("data", (data) => {
-    handleData(socket, data, sb, host, flag);
+    handleTCPData(socket, data, sb, host, flag);
   });
   socket.on("end", () => {
     log.d("TLS socket clean half shutdown");
     socket.end();
   });
-
+  socket.on("error", (e) => {
+    log.w("TLS socket error, closing connection");
+    close(socket);
+  });
 }
 
-
 /**
+ * Handle DNS over TCP/TLS data stream.
  * @param {Buffer} chunk - A TCP data segment
  */
-function handleData(socket, chunk, sb, host, flag) {
+function handleTCPData(socket, chunk, sb, host, flag) {
   const cl = chunk.byteLength;
   if (cl <= 0) return;
 
@@ -267,7 +301,7 @@ function handleData(socket, chunk, sb, host, flag) {
 
   const qlen = sb.qlenBuf.readUInt16BE();
   if (qlen < minDNSPacketSize || qlen > maxDNSPacketSize) {
-    log.w(`query range err: ql:${qlen} cl:${cl} seek:${seek} rem:${rem}`);
+    log.w(`query range err: ql:${qlen} cl:${cl} rem:${rem}`);
     close(socket);
     return;
   }
@@ -400,7 +434,7 @@ async function handleHTTPRequest(b, req, res) {
     if (isIPv6(host)) host = `[${host}]`;
 
     let reqHeaders = {};
-    // remove http/2 pseudo-headers
+    // Drop http/2 pseudo-headers
     for (const key in req.headers) {
       if (key.startsWith(":")) continue;
       reqHeaders[key] = req.headers[key];
