@@ -6,14 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { TLS_CRT, TLS_KEY } from "./helpers/node/config.js";
 import net, { isIPv6, Socket } from "net";
-import { V1ProxyProtocol } from "proxy-protocol-js";
 import * as tls from "tls";
 import * as http2 from "http2";
+import { V1ProxyProtocol } from "proxy-protocol-js";
+
 import { handleRequest } from "./index.js";
-import { encodeUint8ArrayBE, sleep } from "./helpers/util.js";
 import * as log from "./helpers/log.js";
+import { encodeUint8ArrayBE, sleep } from "./helpers/util.js";
+import { TLS_CRT, TLS_KEY } from "./helpers/node/config.js";
 
 // Ports which the services are exposed on. Corresponds to fly.toml ports.
 const DOT_ENTRY_PORT = 10000;
@@ -38,31 +39,34 @@ const maxDNSPacketSize = 4096;
 // A dns message over TCP stream has a header indicating length.
 const dnsHeaderSize = 2;
 
-let OUR_RG_DN_RE = null; // regular dns name match
-let OUR_WC_DN_RE = null; // wildcard dns name match
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "*",
 };
 
-const dot2 =
-  DOT_IS_PROXY_PROTO &&
-  net
-    .createServer(serveDoTProxyProto)
-    .listen(DOT_PROXY_PORT, () => up("DoT ProxyProto", dot2.address()));
+let OUR_RG_DN_RE = null; // regular dns name match
+let OUR_WC_DN_RE = null; // wildcard dns name match
 
-const dot1 = tls
-  .createServer(tlsOptions, serveTLS)
-  .listen(DOT_PORT, () => up("DoT", dot1.address()));
+// main
+((_) => {
+  const dot1 = tls
+    .createServer(tlsOptions, serveTLS)
+    .listen(DOT_PORT, () => up("DoT", dot1.address()));
 
-const doh = http2
-  .createSecureServer({ ...tlsOptions, allowHTTP1: true }, serveHTTPS)
-  .listen(DOH_PORT, () => up("DoH", doh.address()));
+  const dot2 =
+    DOT_IS_PROXY_PROTO &&
+    net
+      .createServer(serveDoTProxyProto)
+      .listen(DOT_PROXY_PORT, () => up("DoT ProxyProto", dot2.address()));
 
-function up(server, addr) {
-  log.i(server, `listening on: [${addr.address}]:${addr.port}`);
-}
+  const doh = http2
+    .createSecureServer({ ...tlsOptions, allowHTTP1: true }, serveHTTPS)
+    .listen(DOH_PORT, () => up("DoH", doh.address()));
+
+  function up(server, addr) {
+    log.i(server, `listening on: [${addr.address}]:${addr.port}`);
+  }
+})();
 
 function close(sock) {
   sock.destroy();
@@ -94,7 +98,7 @@ function serveDoTProxyProto(clientSocket) {
   });
 
   dotSock.on("error", (e) => {
-    console.log("DoT socket error, closing client connection");
+    log.w("DoT socket error, closing client connection", e);
     close(clientSocket);
     close(dotSock);
   });
@@ -346,7 +350,7 @@ async function handleTCPQuery(q, socket, host, flag) {
   let ok = true;
   if (socket.destroyed) return;
 
-  log.starttime("handle-tcp-query");
+  const t = log.starttime("handle-tcp-query");
   try {
     const r = await resolveQuery(q, host, flag);
     const rlBuf = encodeUint8ArrayBE(r.byteLength, 2);
@@ -359,7 +363,7 @@ async function handleTCPQuery(q, socket, host, flag) {
     ok = false;
     log.w(e);
   }
-  log.endtime("handle-tcp-query");
+  log.endtime(t);
 
   // Only close socket on error, else it would break pipelining of queries.
   if (!ok && !socket.destroyed) {
@@ -399,11 +403,16 @@ async function resolveQuery(q, host, flag) {
 async function serveHTTPS(req, res) {
   const ua = req.headers["user-agent"];
   const buffers = [];
+
+  const t = log.starttime("recv-https");
+
   for await (const chunk of req) {
     buffers.push(chunk);
   }
   const b = Buffer.concat(buffers);
   const bLen = b.byteLength;
+
+  log.endtime(t);
 
   if (
     req.method == "POST" &&
@@ -428,7 +437,7 @@ async function serveHTTPS(req, res) {
  * @param {ServerResponse} res
  */
 async function handleHTTPRequest(b, req, res) {
-  log.starttime("handle-http-req");
+  const t = log.starttime("handle-http-req");
   try {
     let host = req.headers.host || req.headers[":authority"];
     if (isIPv6(host)) host = `[${host}]`;
@@ -449,7 +458,11 @@ async function handleHTTPRequest(b, req, res) {
       body: req.method == "POST" ? b : null,
     });
 
+    log.laptime(t, "upstream-start");
+
     const fRes = await handleRequest({ request: fReq });
+
+    log.laptime(t, "upstream-end");
 
     // Object.assign, Object spread, etc doesn't work with `node-fetch` Headers
     const resHeaders = {};
@@ -458,10 +471,18 @@ async function handleHTTPRequest(b, req, res) {
     });
 
     res.writeHead(fRes.status, resHeaders);
-    res.end(Buffer.from(await fRes.arrayBuffer()));
+
+    log.laptime(t, "send-head");
+
+    const ans = Buffer.from(await fRes.arrayBuffer());
+
+    log.laptime(t, "recv-ans");
+
+    res.end(ans);
   } catch (e) {
     res.end();
     log.w(e);
   }
-  log.endtime("handle-http-req");
+
+  log.endtime(t);
 }

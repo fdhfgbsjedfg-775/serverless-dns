@@ -5,17 +5,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-const debug = false;
-
-import { BlocklistWrapper } from "@serverless-dns/blocklist-wrapper";
-import { CommandControl } from "@serverless-dns/command-control";
-import { UserOperation } from "@serverless-dns/basic";
+import { BlocklistWrapper } from "./blocklist-wrapper/blocklistWrapper.js";
+import { CommandControl } from "./command-control/cc.js";
+import { UserOperation } from "./basic/basic.js";
 import {
   DNSAggCache,
   DNSBlock,
   DNSResolver,
   DNSResponseBlock,
-} from "@serverless-dns/dns-operation";
+} from "./dns-operation/dnsOperation.js";
+import * as log from "./helpers/log.js";
 
 const blocklistWrapper = new BlocklistWrapper();
 const commandControl = new CommandControl();
@@ -28,13 +27,12 @@ const dnsAggCache = new DNSAggCache();
 export default class RethinkPlugin {
   /**
    * @param {{request: Request}} event
-   * @param {Env} env
    */
-  constructor(event, env) {
+  constructor(event) {
     /**
      * Parameters of RethinkPlugin which may be used by individual plugins.
      */
-    this.parameter = new Map(env.getEnvMap());
+    this.parameter = new Map(envManager.getMap());
     this.registerParameter("request", event.request);
     this.registerParameter("event", event);
     this.registerParameter(
@@ -111,6 +109,7 @@ export default class RethinkPlugin {
         "request",
         "dnsResolverUrl",
         "runTimeEnv",
+        "cloudPlatform",
         "requestDecodedDnsPacket",
         "event",
         "blocklistFilter",
@@ -147,22 +146,26 @@ export default class RethinkPlugin {
     });
   }
 
-  async executePlugin(currentRequest) {
-    for (const singlePlugin of this.plugin) {
-      if (
-        currentRequest.stopProcessing && !singlePlugin.continueOnStopProcess
-      ) {
+  async executePlugin(req) {
+    const t = log.starttime("exec-plugin");
+    for (const p of this.plugin) {
+      if (req.stopProcessing && !p.continueOnStopProcess) {
         continue;
       }
-      if (debug) console.log(singlePlugin.name);
-      const response = await singlePlugin.module.RethinkModule(
-        generateParam(this.parameter, singlePlugin.param),
-      );
 
-      if (singlePlugin.callBack) {
-        await singlePlugin.callBack.call(this, response, currentRequest);
+      log.laptime(t, p.name, "send-req");
+
+      const res = await p.module.RethinkModule(generateParam(this.parameter, p.param));
+
+      log.laptime(t, p.name, "got-res");
+
+      if (p.callBack) {
+        await p.callBack.call(this, res, req);
       }
+
+      log.laptime(t, p.name, "post-callback")
     }
+    log.endtime(t);
   }
 }
 
@@ -172,9 +175,8 @@ export default class RethinkPlugin {
  * @param {*} currentRequest
  */
 function blocklistFilterCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In blocklistFilterCallBack");
-  }
+  log.d("In blocklistFilterCallBack");
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else {
@@ -188,10 +190,7 @@ function blocklistFilterCallBack(response, currentRequest) {
  * @param {*} currentRequest
  */
 async function commandControlCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In commandControlCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In commandControlCallBack", JSON.stringify(response.data));
 
   if (response.data.stopProcessing) {
     currentRequest.httpResponse = response.data.httpResponse;
@@ -205,10 +204,8 @@ async function commandControlCallBack(response, currentRequest) {
  * @param {*} currentRequest
  */
 async function userOperationCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In userOperationCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In userOperationCallBack", JSON.stringify(response.data));
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else if (
@@ -241,10 +238,8 @@ async function userOperationCallBack(response, currentRequest) {
 }
 
 function dnsAggCacheCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In dnsAggCacheCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In dnsAggCacheCallBack", JSON.stringify(response.data));
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else if (response.data !== null) {
@@ -280,10 +275,8 @@ function dnsAggCacheCallBack(response, currentRequest) {
 }
 
 function dnsBlockCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In dnsBlockCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In dnsBlockCallBack", JSON.stringify(response.data));
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else {
@@ -302,10 +295,8 @@ function dnsBlockCallBack(response, currentRequest) {
  * @param {*} currentRequest
  */
 function dnsResolverCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In dnsResolverCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In dnsResolverCallBack", JSON.stringify(response.data));
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else {
@@ -328,10 +319,8 @@ function dnsResolverCallBack(response, currentRequest) {
  * @param {*} currentRequest
  */
 function dnsResponseBlockCallBack(response, currentRequest) {
-  if (debug) {
-    console.log("In dnsCnameBlockCallBack");
-    console.log(JSON.stringify(response.data));
-  }
+  log.d("In dnsCnameBlockCallBack", JSON.stringify(response.data));
+
   if (response.isException) {
     loadException(response, currentRequest);
   } else {
@@ -348,7 +337,7 @@ function dnsResponseBlockCallBack(response, currentRequest) {
 }
 
 function loadException(response, currentRequest) {
-  console.error(JSON.stringify(response));
+  log.e(JSON.stringify(response));
   currentRequest.stopProcessing = true;
   currentRequest.isException = true;
   currentRequest.exceptionStack = response.exceptionStack;
@@ -361,7 +350,7 @@ function loadException(response, currentRequest) {
  * @param {String[]} list - Parameters of a plugin
  * @returns - Object of plugin parameters
  */
-function generateParam(parameter,list) {
+function generateParam(parameter, list) {
   const param = {};
   for (const key of list) {
     if (parameter.has(key)) {
