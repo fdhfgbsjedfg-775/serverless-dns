@@ -15,6 +15,7 @@ TD_NODE_COUNT = "42112224"
 TD_PARTS = "2"
 CF_DNS_RESOLVER_URL = "https://cloudflare-dns.com/dns-query"
 CF_BLOCKLIST_DOWNLOAD_TIMEOUT = "10000"
+# DOT_HAS_PROXY_PROTO = "true"
 
 [experimental]
 allowed_public_ports = []
@@ -23,8 +24,8 @@ auto_rollback = true
 # Don't use `[processes]`, undocumented and causes problems with [auto]scaling.
 # Instead, use CMD in Dockerfile.
 # [processes]
-# app = "run --allow-net --allow-env --import-map=import_map.json http.ts"
-# app = "node server.js"
+# app = "run --allow-net --allow-env --import-map=import_map.json server-deno.ts"
+# app = "node server-node.js"
 
 # DNS over HTTP[S]
 [[services]]
@@ -44,8 +45,10 @@ script_checks = []
   port = 443
 
   [[services.tcp_checks]]
-  grace_period = "1s"
-  interval = "15s"
+  # account for delay due to blocklists download that
+  # happens on process startup: plugin.js:systemReady
+  grace_period = "15s"
+  interval = "30s"
   restart_limit = 6
   timeout = "2s"
 
@@ -65,3 +68,11 @@ script_checks = []
   [[services.ports]]
   # handlers = ["proxy_proto"]
   port = 853
+
+  [[services.tcp_checks]]
+  # account for delay due to blocklists download that
+  # happens on process startup: plugin.js:systemReady
+  grace_period = "15s"
+  interval = "30s"
+  restart_limit = 6
+  timeout = "2s"

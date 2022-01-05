@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - "main"
+    paths-ignore:
+      - ".github/**"
+      - "!.github/workflows/fly.yml"
+      - ".env.example"
+      - ".eslintrc.cjs"
+      - ".prettierignore"
+      - "wrangler.toml"
+      - "README.md"
   workflow_dispatch:
     inputs:
       git-ref:
@@ -36,16 +44,22 @@ jobs:
           github.event.inputs.deployment-type == 'b1' }}
         run: |
           echo "FLY_APP=${{ secrets.FLY_APP_NAME_B1 }}" >> $GITHUB_ENV
+          echo "::notice::B1 deployment"
 
       - name: 🚨 *LIVE* Fly App ?
         if: ${{ github.event_name == 'workflow_dispatch' &&
           github.event.inputs.deployment-type == 'live' }}
         run: |
           echo "FLY_APP=${{ secrets.FLY_APP_NAME_LIVE }}" >> $GITHUB_ENV
+          echo "::notice::Live deployment"
 
       - name: 🏗 Build & 🚢 Ship
         uses: superfly/flyctl-actions@1.1
         with:
-          args: "deploy --dockerfile node.Dockerfile --image-label ${{ env.GIT_HEAD }}"
+          args: "deploy
+            --dockerfile node.Dockerfile
+            --image-label ${{ env.GIT_HEAD }}
+            --strategy rolling
+            "
       - run: |
           echo "::notice::Image @ registry.fly.io/${{ env.FLY_APP }}:${{ env.GIT_HEAD }}"

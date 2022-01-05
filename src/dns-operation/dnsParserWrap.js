@@ -6,25 +6,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 import * as DnsParser from "@serverless-dns/dns-parser";
-import { Buffer } from "buffer";
+import * as util from "../helpers/util.js";
 
 export default class DNSParserWrap {
   constructor() {}
 
-  Decode(arrayBuffer) {
-    try {
-      return DnsParser.decode(Buffer.from(new Uint8Array(arrayBuffer)));
-    } catch (e) {
-      console.error("Error At : DNSParserWrap -> Decode");
-      throw e;
-    }
+  decode(arrayBuffer) {
+    return DnsParser.decode(util.bufferOf(arrayBuffer));
   }
-  Encode(DecodedDnsPacket) {
-    try {
-      return DnsParser.encode(DecodedDnsPacket);
-    } catch (e) {
-      console.error("Error At : DNSParserWrap -> Encode");
-      throw e;
-    }
+
+  encode(decodedDnsPacket) {
+    return DnsParser.encode(decodedDnsPacket);
   }
 }

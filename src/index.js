@@ -6,79 +6,57 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import CurrentRequest from "./currentRequest.js";
-import RethinkPlugin from "./plugin.js";
-import EnvManager from "./env.js";
-import * as log from "./helpers/log.js";
+import CurrentRequest from "./helpers/currentRequest.js";
+import RethinkPlugin from "./helpers/plugin.js";
 import * as util from "./helpers/util.js";
 import * as dnsutil from "./helpers/dnsutil.js";
 
-globalThis.envManager = new EnvManager();
-
-if (typeof addEventListener !== "undefined") {
-  addEventListener("fetch", (event) => {
-    event.respondWith(handleRequest(event));
-  });
-}
-
 export function handleRequest(event) {
-  if (!envManager.isLoaded) {
-    envManager.loadEnv();
-  }
-  if (!globalThis.logLevel) {
-    log.setLogLevel(env.logLevel || "info");
-  }
-  const processingTimeout = envManager.get("workerTimeout");
-  const respectTimeout =
-    envManager.get("runTimeEnv") == "worker" && processingTimeout > 0;
-
-  if (!respectTimeout) return proxyRequest(event);
-
   return Promise.race([
-    new Promise((resolve, _) => {
-      resolve(proxyRequest(event));
+    new Promise((accept, _) => {
+      accept(proxyRequest(event));
     }),
-    new Promise((resolve, _) => {
-      setTimeout(() => {
-        // on timeout, send a serv-fail
-        resolve(servfail(event));
-      }, processingTimeout);
+
+    new Promise((accept, _) => {
+      // on timeout, servfail
+      util.timeout(dnsutil.requestTimeout(), () => accept(servfail()));
     }),
   ]);
 }
 
 async function proxyRequest(event) {
   try {
-    if (event.request.method === "OPTIONS") {
-      const res = new Response(null, { status: 204 });
-      util.corsHeaders(res);
-      return res;
-    }
+    if (optionsRequest(event.request)) return util.respond204();
 
     const currentRequest = new CurrentRequest();
     const plugin = new RethinkPlugin(event);
     await plugin.executePlugin(currentRequest);
 
-    util.dohHeaders(event.request, currentRequest.httpResponse);
+    const ua = event.request.headers.get("User-Agent");
+    if (util.fromBrowser(ua)) currentRequest.setCorsHeaders();
 
     return currentRequest.httpResponse;
   } catch (err) {
     log.e(err.stack);
-    return errorOrServfail(event, err);
+    return errorOrServfail(event.request, err);
   }
 }
 
-function errorOrServfail(event, err) {
-  if (util.fromBrowser(event)) {
-    const res = new Response(JSON.stringify(e.stack));
-    util.browserHeaders(res);
-    return res;
-  }
-  return servfail(event);
+function optionsRequest(request) {
+  return request.method === "OPTIONS";
 }
 
-function servfail(event) {
-  const res = new Response(dnsutil.servfail);
-  util.dohHeaders(event.request, res);
+function errorOrServfail(request, err) {
+  const ua = request.headers.get("User-Agent");
+  if (!util.fromBrowser(ua)) return servfail();
+
+  const res = new Response(JSON.stringify(err.stack), {
+    status: 503, // unavailable
+    headers: util.browserHeaders(),
+  });
   return res;
+}
+
+function servfail() {
+  return util.respond503();
 }

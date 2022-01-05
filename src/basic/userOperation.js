@@ -5,14 +5,18 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import { LocalCache as LocalCache } from "../cache-wrapper/cache-wrapper.js";
+import { UserCache } from "../cache-wrapper/cache-wrapper.js";
 import { BlocklistFilter } from "../blocklist-wrapper/blocklistWrapper.js";
+import * as util from "../helpers/util.js";
+import * as dnsBlockUtil from "../helpers/dnsblockutil.js";
 
 export class UserOperation {
   constructor() {
-    this.userConfigCache = false;
+    this.userConfigCache = new UserCache(1000);
     this.blocklistFilter = new BlocklistFilter();
+    this.log = log.withTags("UserOp");
   }
+
   /**
    * @param {*} param
    * @param {*} param.dnsResolverUrl
@@ -23,52 +27,50 @@ export class UserOperation {
   async RethinkModule(param) {
     return this.loadUser(param);
   }
-  
+
   loadUser(param) {
-    let response = {};
+    const response = {};
     response.isException = false;
     response.exceptionStack = "";
     response.exceptionFrom = "";
     response.data = {};
     response.data.userBlocklistInfo = {};
     response.data.userBlocklistInfo.dnsResolverUrl = "";
-    try {
-      if (!param.isDnsMsg) {
-        return response;
-      }
 
-      if (!this.userConfigCache) {
-        this.userConfigCache = new LocalCache(
-          "User-Config-Cache",
-          1000,
-        );
-      }
-      let userBlocklistInfo = {};
-      userBlocklistInfo.from = "Cache";
+    if (!param.isDnsMsg) {
+      return response;
+    }
+
+    try {
+      const userBlocklistInfo = {};
       let blocklistFlag = getBlocklistFlag(param.request.url);
-      let currentUser = this.userConfigCache.Get(blocklistFlag);
-      if (!currentUser) {
+      let currentUser = this.userConfigCache.get(blocklistFlag);
+
+      if (util.emptyObj(currentUser)) {
         currentUser = {};
         currentUser.userBlocklistFlagUint = "";
         currentUser.flagVersion = 0;
         currentUser.userServiceListUint = false;
 
-        let response = this.blocklistFilter.unstamp(blocklistFlag);
+        const response = this.blocklistFilter.unstamp(blocklistFlag);
         currentUser.userBlocklistFlagUint = response.userBlocklistFlagUint;
         currentUser.flagVersion = response.flagVersion;
 
-        if (currentUser.userBlocklistFlagUint !== "") {
-          currentUser.userServiceListUint = this.blocklistFilter
-            .flagIntersection(
-              currentUser.userBlocklistFlagUint,
-              this.blocklistFilter.wildCardUint,
-            );
+        if (!util.emptyString(currentUser.userBlocklistFlagUint)) {
+          currentUser.userServiceListUint = dnsBlockUtil.flagIntersection(
+            currentUser.userBlocklistFlagUint,
+            this.blocklistFilter.wildCardUint
+          );
         } else {
           blocklistFlag = "";
         }
         userBlocklistInfo.from = "Generated";
-        this.userConfigCache.Put(blocklistFlag, currentUser);
+        // FIXME: blocklistFlag can be an empty-string
+        this.userConfigCache.put(blocklistFlag, currentUser);
+      } else {
+        userBlocklistInfo.from = "Cache";
       }
+
       userBlocklistInfo.userBlocklistFlagUint =
         currentUser.userBlocklistFlagUint;
       userBlocklistInfo.flagVersion = currentUser.flagVersion;
@@ -80,12 +82,13 @@ export class UserOperation {
       response.isException = true;
       response.exceptionStack = e.stack;
       response.exceptionFrom = "UserOperation loadUser";
-      console.error("Error At : UserOperation -> loadUser");
-      console.error(e.stack);
+      this.log.e(param.rxid, "loadUser", e);
     }
+
     return response;
   }
 }
+
 /**
  * Get the blocklist flag from `Request` URL
  * DNS over TLS flag from SNI should be rewritten to `url`'s pathname
@@ -94,12 +97,12 @@ export class UserOperation {
  */
 function getBlocklistFlag(url) {
   let blocklistFlag = "";
-  let reqUrl = new URL(url);
+  const reqUrl = new URL(url);
 
   // Check if pathname has `/dns-query`
-  let tmpsplit = reqUrl.pathname.split("/");
+  const tmpsplit = reqUrl.pathname.split("/");
   if (tmpsplit.length > 1) {
-    if (tmpsplit[1].toLowerCase() == "dns-query") {
+    if (tmpsplit[1].toLowerCase() === "dns-query") {
       blocklistFlag = tmpsplit[2] || "";
     } else {
       blocklistFlag = tmpsplit[1] || "";

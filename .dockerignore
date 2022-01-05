@@ -1,10 +1,13 @@
-.git
+.git/
 .gitignore
 .env
 .env.example
-.github
-.vscode
-.prettierrc
+.github/
+.vscode/
+.prettierrc.json
+.prettierignore
+.eslintrc.cjs
+.eslintcache
 
 node_modules/
 worker/
@@ -15,3 +18,4 @@ log/
 *.md
 LICENSE
 wrangler.toml
+package-lock.json

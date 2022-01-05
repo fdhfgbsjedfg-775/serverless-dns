@@ -3,6 +3,14 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - ".github/**"
+      - "!.github/workflows/cf.yml"
+      - ".env.example"
+      - ".eslintrc.cjs"
+      - ".prettierignore"
+      - "fly.toml"
+      - "README.md"
   repository_dispatch:
 jobs:
   deploy:
