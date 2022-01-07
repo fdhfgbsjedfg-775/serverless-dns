@@ -8,6 +8,7 @@
 
 import { DNSParserWrap as Dns } from "../dns-operation/dnsOperation.js";
 import * as envutil from "./envutil.js";
+import * as util from "./util.js";
 
 // dns packet constants (in bytes)
 // A dns message over TCP stream has a header indicating length.
@@ -69,23 +70,20 @@ export function validateSize(sz) {
 }
 
 export function hasAnswers(packet) {
-  return packet && packet.answers && packet.answers.length > 0;
+  return !util.emptyObj(packet) && !util.emptyArray(packet.answers);
 }
 
 export function hasSingleQuestion(packet) {
-  return packet && packet.questions && packet.questions.length === 1;
+  return (
+    !util.emptyObj(packet) &&
+    !util.emptyArray(packet.questions) &&
+    packet.questions.length === 1
+  );
 }
 
 export function rcodeNoError(packet) {
   // github.com/mafintosh/dns-packet/blob/8e6d91c07/rcodes.js
   return packet && packet.rcode === "NOERROR";
-}
-
-export function dnsqurl(dnsq) {
-  return btoa(String.fromCharCode(...new Uint8Array(dnsq)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
 }
 
 export function optAnswer(a) {
@@ -115,21 +113,62 @@ export function isBlockable(packet) {
 }
 
 export function isCname(packet) {
-  return hasAnswers(packet) && packet.answers[0].type === "CNAME";
+  return hasAnswers(packet) && isAnswerCname(packet.answers[0]);
 }
 
-export function isHttps(packet) {
+export function isAnswerCname(ans) {
   return (
-    hasAnswers(packet) &&
-    (packet.answers[0].type === "HTTPS" || packet.answers[0].type === "SVCB")
+    !util.emptyObj(ans) && !util.emptyString(ans.type) && ans.type === "CNAME"
   );
 }
 
-export function getCname(answers) {
-  const li = [];
-  li[0] = answers[0].data.trim().toLowerCase();
-  li[1] = answers[answers.length - 1].name.trim().toLowerCase();
-  return li;
+export function isHttps(packet) {
+  return hasAnswers(packet) && isAnswerHttps(packet.answers[0]);
+}
+
+export function isAnswerHttps(ans) {
+  return (
+    !util.emptyObj(ans) &&
+    !util.emptyString(ans.type) &&
+    (ans.type === "HTTPS" || ans.type === "SVCB")
+  );
+}
+
+export function extractDomains(dnsPacket) {
+  if (!hasSingleQuestion(dnsPacket)) return [];
+
+  const names = new Set();
+  const answers = dnsPacket.answers;
+
+  const q = normalizeName(dnsPacket.questions[0].name);
+  names.add(q);
+
+  if (util.emptyArray(answers)) return [...names];
+
+  // name                    ttl  cls  type    data
+  // aws.amazon.com          57   IN   CNAME   frontier.amazon.com
+  // frontier.amazon.com     57   IN   CNAME   3n1n2s.cloudfront.net
+  // 3n1n2s.cloudfront.net   57   IN   A       54.230.149.75
+  for (const a of answers) {
+    if (a && !util.emptyString(a.name)) {
+      const n = normalizeName(a.name);
+      names.add(n);
+    }
+    if (isAnswerCname(a) && !util.emptyString(a.data)) {
+      const n = normalizeName(a.data);
+      names.add(n);
+    } else if (
+      isAnswerHttps(a) &&
+      a.data &&
+      !util.emptyString(a.data.targetName)
+    ) {
+      const n = normalizeName(a.data.targetName);
+      // when ".", then target-domain is same as the question-domain
+      if (n !== ".") names.add(n);
+    }
+  }
+
+  return [...names];
 }
 
 export function dohStatusCode(b) {
@@ -139,14 +178,21 @@ export function dohStatusCode(b) {
   return 200;
 }
 
-export function getTargetName(answers) {
-  const tn = answers[0].data.targetName.trim().toLowerCase();
-  if (tn === ".") return false;
-  return tn;
+export function getQueryName(questions) {
+  const qn = normalizeName(questions[0].name);
+
+  return util.emptyString(qn) ? false : qn;
 }
 
-export function getQueryName(questions) {
-  const qn = questions[0].name.trim().toLowerCase();
-  if (qn === "") return false;
-  return qn;
+export function normalizeName(n) {
+  if (util.emptyString(n)) return n;
+
+  return n.trim().toLowerCase();
+}
+
+export function hasBlockstamp(blockInfo) {
+  return (
+    !util.emptyObj(blockInfo) &&
+    !util.emptyString(blockInfo.userBlocklistFlagUint)
+  );
 }

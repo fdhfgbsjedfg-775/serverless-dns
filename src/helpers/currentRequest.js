@@ -34,8 +34,19 @@ export default class CurrentRequest {
     }
   }
 
-  dnsExceptionResponse() {
+  dnsExceptionResponse(res) {
     this.initDecodedDnsPacketIfNeeded();
+
+    this.stopProcessing = true;
+    this.isException = true;
+
+    if (util.emptyObj(res)) {
+      this.exceptionStack = "no-res";
+      this.exceptionFrom = "no-res";
+    } else {
+      this.exceptionStack = res.exceptionStack || "no-stack";
+      this.exceptionFrom = res.exceptionFrom || "no-origin";
+    }
 
     const qid = this.decodedDnsPacket.id;
     const questions = this.decodedDnsPacket.questions;
@@ -44,6 +55,7 @@ export default class CurrentRequest {
       exceptionStack: this.exceptionStack,
     };
     const servfail = dnsutil.servfail(qid, questions);
+
     this.httpResponse = new Response(servfail, {
       headers: util.concatHeaders(
         this.headers(),
@@ -70,11 +82,13 @@ export default class CurrentRequest {
     this.httpResponse = new Response(arrayBuffer, { headers: this.headers() });
   }
 
+  // TODO: Enough to make a blocked-response once, and only update qids
   dnsBlockResponse() {
     this.initDecodedDnsPacketIfNeeded();
     try {
       this.decodedDnsPacket.type = "response";
       this.decodedDnsPacket.rcode = "NOERROR";
+      // TODO: what is flag(384) 0b_0000_0000_1100_0000?
       this.decodedDnsPacket.flags = 384;
       this.decodedDnsPacket.flag_qr = true;
       this.decodedDnsPacket.answers = [];
@@ -83,10 +97,13 @@ export default class CurrentRequest {
         this.decodedDnsPacket.questions[0].name;
       this.decodedDnsPacket.answers[0].type =
         this.decodedDnsPacket.questions[0].type;
+      // TODO: make ttl here configurable?
+      // 5m, the default ttl for blocked responses
       this.decodedDnsPacket.answers[0].ttl = 300;
       this.decodedDnsPacket.answers[0].class = "IN";
       this.decodedDnsPacket.answers[0].data = "";
       this.decodedDnsPacket.answers[0].flush = false;
+      // TODO: move record-type checks (A/AAAA/SVCB) to dnsutil
       if (this.decodedDnsPacket.questions[0].type === "A") {
         this.decodedDnsPacket.answers[0].data = "0.0.0.0";
       } else if (this.decodedDnsPacket.questions[0].type === "AAAA") {
@@ -105,10 +122,11 @@ export default class CurrentRequest {
         headers: this.headers(),
       });
     } catch (e) {
-      this.log.e(JSON.stringify(this.decodedDnsPacket));
+      this.log.e("dnsBlock", JSON.stringify(this.decodedDnsPacket), e);
       this.isException = true;
       this.exceptionStack = e.stack;
       this.exceptionFrom = "CurrentRequest dnsBlockResponse";
+      this.httpResponse = util.respond503();
     }
   }
 
@@ -131,13 +149,13 @@ export default class CurrentRequest {
     };
   }
 
-  setCorsHeaders() {
-    // CORS headers are only allowed on ok status.
-    // https://fetch.spec.whatwg.org/#cors-preflight-fetch (Step 7)
-    if (this.httpResponse.ok) {
-      for (const [name, value] of Object.entries(util.corsHeaders())) {
-        this.httpResponse.headers.set(name, value);
-      }
+  setCorsHeadersIfNeeded() {
+    // CORS headers are only allowed when response OK
+    // fetch.spec.whatwg.org/#cors-preflight-fetch (Step 7)
+    if (util.emptyObj(this.httpResponse) || !this.httpResponse.ok) return;
+
+    for (const [name, value] of Object.entries(util.corsHeaders())) {
+      this.httpResponse.headers.set(name, value);
     }
   }
 }
