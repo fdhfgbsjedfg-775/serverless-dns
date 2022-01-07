@@ -11,8 +11,7 @@ function difference(arrA, arrB) {
     );
 }
 function parse(rawDotenv) {
-    const env = {
-    };
+    const env = {};
     for (const line of rawDotenv.split("\n")){
         if (!isVariableStart(line)) continue;
         const key = line.slice(0, line.indexOf("=")).trim();
@@ -27,8 +26,7 @@ function parse(rawDotenv) {
     }
     return env;
 }
-function config(options = {
-}) {
+function config(options = {}) {
     const o = Object.assign({
         path: `.env`,
         export: false,
@@ -62,8 +60,7 @@ function parseFile(filepath) {
     try {
         return parse(new TextDecoder("utf-8").decode(Deno.readFileSync(filepath)));
     } catch (e) {
-        if (e instanceof Deno.errors.NotFound) return {
-        };
+        if (e instanceof Deno.errors.NotFound) return {};
         throw e;
     }
 }
@@ -81,8 +78,7 @@ function expandNewlines(str) {
 }
 function assertSafe(conf, confExample, allowEmptyValues) {
     const currentEnv = Deno.env.toObject();
-    const confWithEnv = Object.assign({
-    }, currentEnv, conf);
+    const confWithEnv = Object.assign({}, currentEnv, conf);
     const missing = difference(Object.keys(confExample), Object.keys(allowEmptyValues ? confWithEnv : removeEmptyValues(confWithEnv)));
     if (missing.length > 0) {
         const errorMessages = [
@@ -244,8 +240,7 @@ var DiffType;
     DiffType1["removed"] = "removed";
     DiffType1["common"] = "common";
     DiffType1["added"] = "added";
-})(DiffType || (DiffType = {
-}));
+})(DiffType || (DiffType = {}));
 class AssertionError extends Error {
     name = "AssertionError";
     constructor(message){
@@ -343,8 +338,7 @@ function promisify(original) {
                     return reject(err);
                 }
                 if (argumentNames !== undefined && values.length > 1) {
-                    const obj = {
-                    };
+                    const obj = {};
                     for(let i5 = 0; i5 < argumentNames.length; i5++){
                         obj[argumentNames[i5]] = values[i5];
                     }
@@ -379,11 +373,11 @@ const osType = (()=>{
 })();
 class NodeErrorAbstraction extends Error {
     code;
-    constructor(name, code, message){
+    constructor(name1, code, message){
         super(message);
         this.code = code;
-        this.name = name;
-        this.stack = this.stack && `${name} [${this.code}]${this.stack.slice(20)}`;
+        this.name = name1;
+        this.stack = this.stack && `${name1} [${this.code}]${this.stack.slice(20)}`;
     }
     toString() {
         return `${this.name} [${this.code}]: ${this.message}`;
@@ -431,15 +425,15 @@ class ERR_OUT_OF_RANGE extends RangeError {
     code = "ERR_OUT_OF_RANGE";
     constructor(str, range, received){
         super(`The value of "${str}" is out of range. It must be ${range}. Received ${received}`);
-        const { name  } = this;
-        this.name = `${name} [${this.code}]`;
+        const { name: name2  } = this;
+        this.name = `${name2} [${this.code}]`;
         this.stack;
-        this.name = name;
+        this.name = name2;
     }
 }
 class ERR_BUFFER_OUT_OF_BOUNDS extends NodeRangeError {
-    constructor(name){
-        super("ERR_BUFFER_OUT_OF_BOUNDS", name ? `"${name}" is outside of buffer bounds` : "Attempt to access memory outside buffer bounds");
+    constructor(name3){
+        super("ERR_BUFFER_OUT_OF_BOUNDS", name3 ? `"${name3}" is outside of buffer bounds` : "Attempt to access memory outside buffer bounds");
     }
 }
 const windows = [
@@ -2178,19 +2172,19 @@ function base64ByteLength(str, bytes) {
     if (bytes > 1 && str.charCodeAt(bytes - 1) === 61) bytes--;
     return bytes * 3 >>> 2;
 }
-class Buffer1 extends Uint8Array {
+class Buffer extends Uint8Array {
     static alloc(size, fill, encoding = "utf8") {
         if (typeof size !== "number") {
             throw new TypeError(`The "size" argument must be of type number. Received type ${typeof size}`);
         }
-        const buf = new Buffer1(size);
+        const buf = new Buffer(size);
         if (size === 0) return buf;
         let bufFill;
         if (typeof fill === "string") {
             const clearEncoding = checkEncoding(encoding);
             if (typeof fill === "string" && fill.length === 1 && clearEncoding === "utf8") {
                 buf.fill(fill.charCodeAt(0));
-            } else bufFill = Buffer1.from(fill, clearEncoding);
+            } else bufFill = Buffer.from(fill, clearEncoding);
         } else if (typeof fill === "number") {
             buf.fill(fill);
         } else if (fill instanceof Uint8Array) {
@@ -2216,7 +2210,7 @@ class Buffer1 extends Uint8Array {
         return buf;
     }
     static allocUnsafe(size) {
-        return new Buffer1(size);
+        return new Buffer(size);
     }
     static byteLength(string8, encoding = "utf8") {
         if (typeof string8 != "string") return string8.byteLength;
@@ -2230,12 +2224,12 @@ class Buffer1 extends Uint8Array {
                 totalLength += buf.length;
             }
         }
-        const buffer = Buffer1.allocUnsafe(totalLength);
+        const buffer = Buffer.allocUnsafe(totalLength);
         let pos = 0;
         for (const item of list){
             let buf;
-            if (!(item instanceof Buffer1)) {
-                buf = Buffer1.from(item);
+            if (!(item instanceof Buffer)) {
+                buf = Buffer.from(item);
             } else {
                 buf = item;
             }
@@ -2250,15 +2244,15 @@ class Buffer1 extends Uint8Array {
         if (typeof value == "string") {
             encoding = checkEncoding(encoding, false);
             if (encoding === "hex") {
-                return new Buffer1(decode(new TextEncoder().encode(value)).buffer);
+                return new Buffer(decode(new TextEncoder().encode(value)).buffer);
             }
-            if (encoding === "base64") return new Buffer1(decode1(value).buffer);
-            return new Buffer1(new TextEncoder().encode(value).buffer);
+            if (encoding === "base64") return new Buffer(decode1(value).buffer);
+            return new Buffer(new TextEncoder().encode(value).buffer);
         }
-        return new Buffer1(value, offset, length);
+        return new Buffer(value, offset, length);
     }
     static isBuffer(obj) {
-        return obj instanceof Buffer1;
+        return obj instanceof Buffer;
     }
     static isEncoding(encoding) {
         return typeof encoding === "string" && encoding.length !== 0 && normalizeEncoding(encoding) !== undefined;
@@ -2491,8 +2485,7 @@ function rxidFromHeader(h) {
     return h.get("x-rethinkdns-rxid");
 }
 function copyHeaders(request) {
-    const headers = {
-    };
+    const headers = {};
     if (!request || !request.headers) return headers;
     request.headers.forEach((val, name)=>{
         headers[name] = val;
@@ -2500,8 +2493,7 @@ function copyHeaders(request) {
     return headers;
 }
 function objOf(map) {
-    return map.entries ? Object.fromEntries(map) : {
-    };
+    return map.entries ? Object.fromEntries(map) : {};
 }
 function arrayBufferOf(buf) {
     if (!buf) return null;
@@ -2511,7 +2503,7 @@ function arrayBufferOf(buf) {
 }
 function bufferOf(arrayBuf) {
     if (!arrayBuf) return null;
-    return Buffer1.from(new Uint8Array(arrayBuf));
+    return Buffer.from(new Uint8Array(arrayBuf));
 }
 function timeout(ms, callback) {
     if (typeof callback !== "function") return -1;
@@ -2542,8 +2534,7 @@ function safeBox(fn, defaultResponse = null) {
     if (typeof fn !== "function") return defaultResponse;
     try {
         return fn();
-    } catch (ignore) {
-    }
+    } catch (ignore) {}
     return defaultResponse;
 }
 function isDnsMsg(req) {
@@ -2554,7 +2545,7 @@ function emptyResponse() {
         isException: false,
         exceptionStack: "",
         exceptionFrom: "",
-        data: false
+        data: {}
     };
 }
 function errResponse(id, err) {
@@ -2576,7 +2567,7 @@ function emptyString(str) {
 function emptyArray(a) {
     if (!a) return true;
     if (typeof a !== "object") return false;
-    return a.length && a.length <= 0;
+    return !!a.length && a.length <= 0;
 }
 function concatObj(...args) {
     return Object.assign(...args);
@@ -2584,10 +2575,25 @@ function concatObj(...args) {
 function emptyObj(x) {
     return !x || Object.keys(x).length <= 0;
 }
+function emptyBuf(b) {
+    return !b || !!b.byteLength && b.byteLength <= 0;
+}
 function respond204() {
     return new Response(null, {
         status: 204,
         headers: corsHeaders()
+    });
+}
+function respond400() {
+    return new Response(null, {
+        status: 400,
+        statusText: "Bad Request"
+    });
+}
+function respond405() {
+    return new Response(null, {
+        status: 405,
+        statusText: "Method Not Allowed"
     });
 }
 function respond503() {
@@ -2595,6 +2601,12 @@ function respond503() {
         status: 503,
         headers: dnsHeaders()
     });
+}
+function isPostRequest(req) {
+    return req && !emptyString(req.method) && req.method.toUpperCase() === "POST";
+}
+function isGetRequest(req) {
+    return req && !emptyString(req.method) && req.method.toUpperCase() === "GET";
 }
 const stickyEvents = new Set([
     "ready",
@@ -2751,10 +2763,10 @@ class Log {
                 this.debug = console.debug;
             case "timer":
                 this.lapTime = console.timeLog;
-                this.startTime = function(name) {
-                    name += uid();
-                    console.time(name);
-                    return name;
+                this.startTime = function(name4) {
+                    name4 += uid();
+                    console.time(name4);
+                    return name4;
                 };
                 this.endTime = console.timeEnd;
             case "info":
@@ -2832,25 +2844,24 @@ const _ENV_VAR_MAPPINGS = {
 };
 function _getRuntimeEnv(runtime) {
     console.info("Loading env. from runtime:", runtime);
-    const env = {
-    };
+    const env = {};
     for (const [key, mappedKey] of Object.entries(_ENV_VAR_MAPPINGS)){
-        let name = null;
+        let name5 = null;
         let type = null;
         if (typeof mappedKey !== "object") continue;
         if (typeof mappedKey.name === "object") {
-            name = mappedKey.name[runtime];
+            name5 = mappedKey.name[runtime];
         } else {
-            name = mappedKey.name;
+            name5 = mappedKey.name;
         }
         type = mappedKey.type;
-        if (!name || !type) {
+        if (!name5 || !type) {
             console.debug(runtime, "unnamed / untyped env mapping", key, mappedKey);
             continue;
         }
-        if (runtime === "node") env[key] = process.env[name];
-        else if (runtime === "deno") env[key] = Deno.env.get(name);
-        else if (runtime === "worker") env[key] = globalThis[name];
+        if (runtime === "node") env[key] = process.env[name5];
+        else if (runtime === "deno") env[key] = Deno.env.get(name5);
+        else if (runtime === "worker") env[key] = globalThis[name5];
         else throw new Error(`unsupported runtime: ${runtime}`);
         if (type === "boolean") env[key] = !!env[key];
         else if (type === "number") env[key] = Number(env[key]);
@@ -2860,7 +2871,7 @@ function _getRuntimeEnv(runtime) {
     }
     return env;
 }
-function _determineRuntimeIfPossible() {
+function _determineRuntime() {
     if (typeof Deno !== "undefined") {
         return Deno.env.get("RUNTIME") || "deno";
     }
@@ -2872,12 +2883,15 @@ function _determineRuntimeIfPossible() {
 }
 class EnvManager {
     constructor(){
-        this.runtime = _determineRuntimeIfPossible();
+        this.runtime = _determineRuntime();
         this.envMap = new Map();
         this.load();
     }
     load() {
         const renv = _getRuntimeEnv(this.runtime);
+        if (this.runtime === "deno" && !renv.runTime) {
+            renv.runTime = "deno";
+        }
         globalThis.env = renv;
         for (const [k, v] of Object.entries(renv)){
             this.envMap.set(k, v);
@@ -2914,22 +2928,58 @@ class EnvManager {
         config({
             export: true
         });
-        Deno.env.set("RUNTIME", "deno");
     } catch (e) {
         console.warn(".env file may not be loaded => ", e.name, ":", e.message);
+    }
+    try {
+        Deno.env.set("RUNTIME", "deno");
+    } catch (e1) {
+        console.warn("Deno.env.set() is not available => ", e1.name, ":", e1.message);
     }
     window.envManager = new EnvManager();
     window.log = new Log(window.env.logLevel, isProd);
     pub("ready");
 })();
-function isWorkers() {
-    return env && env.runTime === "worker";
+const ALPHA32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+function readChar(chr) {
+    chr = chr.toUpperCase();
+    const idx = ALPHA32.indexOf(chr);
+    if (idx === -1) {
+        throw new Error("invalid b32 character: " + chr);
+    }
+    return idx;
 }
-function isNode() {
-    return env && env.runTime === "node";
+function rbase32(input) {
+    input = input.replace(/=+$/, "");
+    const length = input.length;
+    let bits = 0;
+    let value = 0;
+    let index = 0;
+    const output = new Uint8Array(length * 5 / 8 | 0);
+    for(let i8 = 0; i8 < length; i8++){
+        value = value << 5 | readChar(input[i8]);
+        bits += 5;
+        if (bits >= 8) {
+            output[index++] = value >>> bits - 8 & 255;
+            bits -= 8;
+        }
+    }
+    return output;
 }
-function workersTimeout(defaultValue = 0) {
-    return env && env.workerTimeout || defaultValue;
+const _b64delim = ":";
+const _b32delim = "+";
+const _wildcardUint16 = new Uint16Array([
+    64544,
+    18431,
+    8191,
+    65535,
+    64640,
+    1,
+    128,
+    16320, 
+]);
+function wildcards() {
+    return _wildcardUint16;
 }
 function isBlocklistFilterSetup(blf) {
     return blf && blf.t && blf.ft;
@@ -2940,16 +2990,16 @@ function doBlock(blf, userBlInfo, dn, cf) {
     const dnUint = blocklistMap.get(dn);
     if (!dnUint) return false;
     const r = checkFlagIntersection(userBlInfo.userBlocklistFlagUint, dnUint, userBlInfo.flagVersion);
-    if (r && r.isBlocked) return r;
+    if (!emptyObj(r) && r.isBlocked) return r;
     if (!userBlInfo.userServiceListUint) return r;
     return checkWildcardBlocking(userBlInfo.userServiceListUint, userBlInfo.flagVersion, blocklistMap, dn);
 }
 function getBlocklistStampForDomains(domain, blf, cf) {
     if (emptyString(domain)) return false;
-    if (cf && cf.hasOwnProperty(domain)) {
+    if (!emptyObj(cf) && cf.hasOwnProperty(domain)) {
         return mapOf(cf[domain]);
     }
-    if (blf && isBlocklistFilterSetup(blf)) {
+    if (!emptyObj(blf) && isBlocklistFilterSetup(blf)) {
         return blf.getDomainInfo(domain).searchResult;
     }
     return false;
@@ -2975,10 +3025,10 @@ function checkFlagIntersection(uint1, uint2, flagVersion) {
     const blockedUint = flagIntersection(uint1, uint2);
     if (blockedUint) {
         response.isBlocked = true;
-        response.blockedB64Flag = getB64Flag(blockedUint, flagVersion);
+        response.blockedB64Flag = getB64Flag1(blockedUint, flagVersion);
     } else {
         response.isBlocked = false;
-        response.blockedB64Flag = getB64Flag(uint2, flagVersion);
+        response.blockedB64Flag = getB64Flag1(uint2, flagVersion);
     }
     return response;
 }
@@ -3005,15 +3055,15 @@ function flagIntersection(flag1, flag2) {
             }
         }
         if ((flag1Header & 1) === 1) {
-            flag1Length = flag1Length - 1;
+            flag1Length -= 1;
         }
         if ((flag2Header & 1) === 1) {
-            flag2Length = flag2Length - 1;
+            flag2Length -= 1;
         }
-        flag1Header = flag1Header >>> 1;
-        flag2Header = flag2Header >>> 1;
-        tmpIntersectHeader = tmpIntersectHeader >>> 1;
-        maskHeaderForBodyEmpty = maskHeaderForBodyEmpty << 1;
+        flag1Header >>>= 1;
+        flag2Header >>>= 1;
+        tmpIntersectHeader >>>= 1;
+        maskHeaderForBodyEmpty <<= 1;
     }
     if (intersectHeader === 0) {
         return false;
@@ -3025,17 +3075,121 @@ function flagIntersection(flag1, flag2) {
     out.set(intersectBody, 1);
     return out;
 }
-function getB64Flag(uint16Arr, flagVersion) {
+function getB64Flag1(uint16Arr, flagVersion) {
     if (emptyArray(uint16Arr)) return "";
     if (flagVersion === "0") {
         return encodeURIComponent(Buffer.from(uint16Arr).toString("base64"));
     } else if (flagVersion === "1") {
-        const flag = encodeURI(btoa(encodeUint16arrToBinary(uint16Arr)).replace(/\//g, "_").replace(/\+/g, "-"));
+        const flag = encodeURI(bytesToBase64Url(uint16Arr.buffer));
         return flagVersion + ":" + flag;
     }
 }
-function encodeUint16arrToBinary(uint16Arr) {
-    return String.fromCharCode(...new Uint8Array(uint16Arr.buffer));
+function bytesToBase64Url(b) {
+    return btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\//g, "_").replace(/\+/g, "-").replace(/=/g, "");
+}
+function blockstampFromUrl(u) {
+    const url = new URL(u);
+    const paths = url.pathname.split("/");
+    if (paths.length <= 1) {
+        return "";
+    }
+    if (paths[1].toLowerCase() === "dns-query") {
+        return paths[2] || "";
+    } else {
+        return paths[1] || "";
+    }
+}
+function binaryStringToBytes(bs) {
+    const len = bs.length;
+    const bytes = new Uint8Array(len);
+    for(let i9 = 0; i9 < len; i9++){
+        bytes[i9] = bs.charCodeAt(i9);
+    }
+    return bytes;
+}
+function regularBase64(b64url) {
+    if (emptyString(b64url)) return b64url;
+    return b64url.replace(/_/g, "/").replace(/-/g, "+");
+}
+function base64ToUintV0(b64Flag) {
+    const buff = Buffer.from(decodeURIComponent(b64Flag), "base64");
+    const str = buff.toString("utf-8");
+    const uint = [];
+    for(let i10 = 0; i10 < str.length; i10++){
+        uint[i10] = str.charCodeAt(i10);
+    }
+    return uint;
+}
+function base64ToUint8(b64uri) {
+    const b64url = decodeURI(b64uri);
+    const binaryStr = atob(regularBase64(b64url));
+    return binaryStringToBytes(binaryStr);
+}
+function base64ToUint16(b64uri) {
+    const b64url = decodeURI(b64uri);
+    const binaryStr = atob(regularBase64(b64url));
+    return decodeFromBinary(binaryStr);
+}
+function base64ToUintV1(b64Flag) {
+    return base64ToUint16(b64Flag);
+}
+function base64ToBytes(b64uri) {
+    return base64ToUint8(b64uri).buffer;
+}
+function base32ToUintV1(flag) {
+    const b32 = decodeURI(flag);
+    return decodeFromBinaryArray(rbase32(b32));
+}
+function decodeFromBinary(b, u8) {
+    if (u8) return new Uint16Array(b.buffer);
+    const bytes = binaryStringToBytes(b);
+    return new Uint16Array(bytes.buffer);
+}
+function decodeFromBinaryArray(b) {
+    return decodeFromBinary(b, true);
+}
+function isB32Stamp(s) {
+    return s.indexOf(_b32delim) > 0;
+}
+function stampVersion(s) {
+    if (s && s.length > 1) return s[0];
+    else return "0";
+}
+function unstamp(flag) {
+    const response = {};
+    response.userBlocklistFlagUint = "";
+    response.flagVersion = "0";
+    flag = flag ? flag.trim() : "";
+    if (flag.length <= 0) {
+        return response;
+    }
+    const isFlagB32 = isB32Stamp(flag);
+    const s = flag.split(isFlagB32 ? _b32delim : _b64delim);
+    let convertor = (x)=>""
+    ;
+    let f = "";
+    const v = stampVersion(s);
+    if (v === "0") {
+        convertor = base64ToUintV0;
+        f = s[0];
+    } else if (v === "1") {
+        convertor = isFlagB32 ? base32ToUintV1 : base64ToUintV1;
+        f = s[1];
+    } else {
+        throw new Error("unknown blocklist stamp version in " + s);
+    }
+    response.flagVersion = v;
+    response.userBlocklistFlagUint = convertor(f) || "";
+    return response;
+}
+function isWorkers() {
+    return env && env.runTime === "worker";
+}
+function isNode() {
+    return env && env.runTime === "node";
+}
+function workersTimeout(defaultValue = 0) {
+    return env && env.workerTimeout || defaultValue;
 }
 "use strict";
 function toString(type) {
@@ -3135,8 +3289,8 @@ function toString(type) {
     }
     return "UNKNOWN_" + type;
 }
-function toType(name) {
-    switch(name.toUpperCase()){
+function toType(name6) {
+    switch(name6.toUpperCase()){
         case "A":
             return 1;
         case "NULL":
@@ -3232,7 +3386,7 @@ function toType(name) {
         case "HTTPS":
             return 65;
     }
-    if (name.toUpperCase().startsWith("UNKNOWN_")) return parseInt(name.slice(8));
+    if (name6.toUpperCase().startsWith("UNKNOWN_")) return parseInt(name6.slice(8));
     return 0;
 }
 "use strict";
@@ -3327,8 +3481,8 @@ function toString3(klass) {
     }
     return "UNKNOWN_" + klass;
 }
-function toClass(name) {
-    switch(name.toUpperCase()){
+function toClass(name7) {
+    switch(name7.toUpperCase()){
         case "IN":
             return 1;
         case "CS":
@@ -3379,14 +3533,14 @@ function toString4(type) {
     }
     return `OPTION_${type}`;
 }
-function toCode(name) {
-    if (typeof name === "number") {
-        return name;
+function toCode(name8) {
+    if (typeof name8 === "number") {
+        return name8;
     }
-    if (!name) {
+    if (!name8) {
         return -1;
     }
-    switch(name.toUpperCase()){
+    switch(name8.toUpperCase()){
         case "OPTION_0":
             return 0;
         case "LLQ":
@@ -3422,7 +3576,7 @@ function toCode(name) {
         case "OPTION_65535":
             return 65535;
     }
-    const m = name.match(/_(\d+)$/);
+    const m = name8.match(/_(\d+)$/);
     if (m) {
         return parseInt(m[1], 10);
     }
@@ -3448,8 +3602,8 @@ function toString5(type) {
     }
     return "key" + type;
 }
-function toKey(name) {
-    switch(name.toLowerCase()){
+function toKey(name9) {
+    switch(name9.toLowerCase()){
         case "mandatory":
             return 0;
         case "alpn":
@@ -3465,32 +3619,31 @@ function toKey(name) {
         case "ipv6hint":
             return 6;
     }
-    if (name.toLowerCase().startsWith("key")) return parseInt(name.slice(3));
+    if (name9.toLowerCase().startsWith("key")) return parseInt(name9.slice(3));
     throw "Invalid svcparam key";
 }
 "use strict";
-const ip = {
-};
+const ip = {};
 ip.toBuffer = function(ip1, buff, offset) {
     offset = ~~offset;
     var result;
     if (this.isV4Format(ip1)) {
-        result = buff || new Buffer1(offset + 4);
+        result = buff || new Buffer(offset + 4);
         ip1.split(/\./g).map(function(__byte) {
             result[offset++] = parseInt(__byte, 10) & 255;
         });
     } else if (this.isV6Format(ip1)) {
         var sections = ip1.split(":", 8);
-        var i8;
-        for(i8 = 0; i8 < sections.length; i8++){
-            var isv4 = this.isV4Format(sections[i8]);
+        var i11;
+        for(i11 = 0; i11 < sections.length; i11++){
+            var isv4 = this.isV4Format(sections[i11]);
             var v4Buffer;
             if (isv4) {
-                v4Buffer = this.toBuffer(sections[i8]);
-                sections[i8] = v4Buffer.slice(0, 2).toString("hex");
+                v4Buffer = this.toBuffer(sections[i11]);
+                sections[i11] = v4Buffer.slice(0, 2).toString("hex");
             }
-            if (v4Buffer && ++i8 < 8) {
-                sections.splice(i8, 0, v4Buffer.slice(2, 4).toString("hex"));
+            if (v4Buffer && ++i11 < 8) {
+                sections.splice(i11, 0, v4Buffer.slice(2, 4).toString("hex"));
             }
         }
         if (sections[0] === "") {
@@ -3498,19 +3651,19 @@ ip.toBuffer = function(ip1, buff, offset) {
         } else if (sections[sections.length - 1] === "") {
             while(sections.length < 8)sections.push("0");
         } else if (sections.length < 8) {
-            for(i8 = 0; i8 < sections.length && sections[i8] !== ""; i8++);
+            for(i11 = 0; i11 < sections.length && sections[i11] !== ""; i11++);
             var argv = [
-                i8,
+                i11,
                 1
             ];
-            for(i8 = 9 - sections.length; i8 > 0; i8--){
+            for(i11 = 9 - sections.length; i11 > 0; i11--){
                 argv.push("0");
             }
             sections.splice.apply(sections, argv);
         }
-        result = buff || new Buffer1(offset + 16);
-        for(i8 = 0; i8 < sections.length; i8++){
-            var word = parseInt(sections[i8], 16);
+        result = buff || new Buffer(offset + 16);
+        for(i11 = 0; i11 < sections.length; i11++){
+            var word = parseInt(sections[i11], 16);
             result[offset++] = word >> 8 & 255;
             result[offset++] = word & 255;
         }
@@ -3525,13 +3678,13 @@ ip.toString = function(buff, offset, length) {
     length = length || buff.length - offset;
     var result = [];
     if (length === 4) {
-        for(var i9 = 0; i9 < length; i9++){
-            result.push(buff[offset + i9]);
+        for(var i12 = 0; i12 < length; i12++){
+            result.push(buff[offset + i12]);
         }
         result = result.join(".");
     } else if (length === 16) {
-        for(var i9 = 0; i9 < length; i9 += 2){
-            result.push(buff.readUInt16BE(offset + i9).toString(16));
+        for(var i12 = 0; i12 < length; i12 += 2){
+            result.push(buff.readUInt16BE(offset + i12).toString(16));
         }
         result = result.join(":");
         result = result.replace(/(^|:)0(:0)*:0(:|$)/, "$1::$3");
@@ -3560,43 +3713,43 @@ ip.fromPrefixLen = function(prefixlen, family) {
     if (family === "ipv6") {
         len = 16;
     }
-    var buff = new Buffer1(len);
-    for(var i10 = 0, n = buff.length; i10 < n; ++i10){
+    var buff = new Buffer(len);
+    for(var i13 = 0, n = buff.length; i13 < n; ++i13){
         var bits = 8;
         if (prefixlen < 8) {
             bits = prefixlen;
         }
         prefixlen -= bits;
-        buff[i10] = ~(255 >> bits) & 255;
+        buff[i13] = ~(255 >> bits) & 255;
     }
     return ip.toString(buff);
 };
 ip.mask = function(addr, mask) {
     addr = ip.toBuffer(addr);
     mask = ip.toBuffer(mask);
-    var result = new Buffer1(Math.max(addr.length, mask.length));
-    var i11 = 0;
+    var result = new Buffer(Math.max(addr.length, mask.length));
+    var i14 = 0;
     if (addr.length === mask.length) {
-        for(i11 = 0; i11 < addr.length; i11++){
-            result[i11] = addr[i11] & mask[i11];
+        for(i14 = 0; i14 < addr.length; i14++){
+            result[i14] = addr[i14] & mask[i14];
         }
     } else if (mask.length === 4) {
-        for(i11 = 0; i11 < mask.length; i11++){
-            result[i11] = addr[addr.length - 4 + i11] & mask[i11];
+        for(i14 = 0; i14 < mask.length; i14++){
+            result[i14] = addr[addr.length - 4 + i14] & mask[i14];
         }
     } else {
-        for(var i11 = 0; i11 < result.length - 6; i11++){
-            result[i11] = 0;
+        for(var i14 = 0; i14 < result.length - 6; i14++){
+            result[i14] = 0;
         }
         result[10] = 255;
         result[11] = 255;
-        for(i11 = 0; i11 < addr.length; i11++){
-            result[i11 + 12] = addr[i11] & mask[i11 + 12];
+        for(i14 = 0; i14 < addr.length; i14++){
+            result[i14 + 12] = addr[i14] & mask[i14 + 12];
         }
-        i11 = i11 + 12;
+        i14 = i14 + 12;
     }
-    for(; i11 < result.length; i11++){
-        result[i11] = 0;
+    for(; i14 < result.length; i14++){
+        result[i14] = 0;
     }
     return ip.toString(result);
 };
@@ -3613,11 +3766,11 @@ ip.subnet = function(addr, mask) {
     var networkAddress = ip.toLong(ip.mask(addr, mask));
     var maskBuffer = ip.toBuffer(mask);
     var maskLength = 0;
-    for(var i12 = 0; i12 < maskBuffer.length; i12++){
-        if (maskBuffer[i12] === 255) {
+    for(var i15 = 0; i15 < maskBuffer.length; i15++){
+        if (maskBuffer[i15] === 255) {
             maskLength += 8;
         } else {
-            var octet = maskBuffer[i12] & 255;
+            var octet = maskBuffer[i15] & 255;
             while(octet){
                 octet = octet << 1 & 255;
                 maskLength++;
@@ -3650,8 +3803,8 @@ ip.cidrSubnet = function(cidrString) {
 };
 ip.not = function(addr) {
     var buff = ip.toBuffer(addr);
-    for(var i13 = 0; i13 < buff.length; i13++){
-        buff[i13] = 255 ^ buff[i13];
+    for(var i16 = 0; i16 < buff.length; i16++){
+        buff[i16] = 255 ^ buff[i16];
     }
     return ip.toString(buff);
 };
@@ -3659,8 +3812,8 @@ ip.or = function(a, b) {
     a = ip.toBuffer(a);
     b = ip.toBuffer(b);
     if (a.length === b.length) {
-        for(var i14 = 0; i14 < a.length; ++i14){
-            a[i14] |= b[i14];
+        for(var i17 = 0; i17 < a.length; ++i17){
+            a[i17] |= b[i17];
         }
         return ip.toString(a);
     } else {
@@ -3671,8 +3824,8 @@ ip.or = function(a, b) {
             other = a;
         }
         var offset = buff.length - other.length;
-        for(var i14 = offset; i14 < buff.length; ++i14){
-            buff[i14] |= other[i14 - offset];
+        for(var i17 = offset; i17 < buff.length; ++i17){
+            buff[i17] |= other[i17 - offset];
         }
         return ip.toString(buff);
     }
@@ -3681,8 +3834,8 @@ ip.isEqual = function(a, b) {
     a = ip.toBuffer(a);
     b = ip.toBuffer(b);
     if (a.length === b.length) {
-        for(var i15 = 0; i15 < a.length; i15++){
-            if (a[i15] !== b[i15]) return false;
+        for(var i18 = 0; i18 < a.length; i18++){
+            if (a[i18] !== b[i18]) return false;
         }
         return true;
     }
@@ -3691,13 +3844,13 @@ ip.isEqual = function(a, b) {
         b = a;
         a = t;
     }
-    for(var i15 = 0; i15 < 10; i15++){
-        if (b[i15] !== 0) return false;
+    for(var i18 = 0; i18 < 10; i18++){
+        if (b[i18] !== 0) return false;
     }
     var word = b.readUInt16BE(10);
     if (word !== 0 && word !== 65535) return false;
-    for(var i15 = 0; i15 < 4; i15++){
-        if (a[i15] !== b[i15 + 12]) return false;
+    for(var i18 = 0; i18 < 4; i18++){
+        if (a[i18] !== b[i18 + 12]) return false;
     }
     return true;
 };
@@ -3735,43 +3888,42 @@ const FLUSH_MASK = 1 << 15;
 const NOT_FLUSH_MASK = ~FLUSH_MASK;
 const QU_MASK = 1 << 15;
 const NOT_QU_MASK = ~QU_MASK;
-const name1 = {
-};
-name1.encode = function(str, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(name1.encodingLength(str));
+const name = {};
+name.encode = function(str, buf, offset) {
+    if (!buf) buf = Buffer.allocUnsafe(name.encodingLength(str));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const n = str.replace(/^\.|\.$/gm, "");
     if (n.length) {
         const list = n.split(".");
-        for(let i16 = 0; i16 < list.length; i16++){
-            const len = buf.write(list[i16], offset + 1);
+        for(let i19 = 0; i19 < list.length; i19++){
+            const len = buf.write(list[i19], offset + 1);
             buf[offset] = len;
             offset += len + 1;
         }
     }
     buf[offset++] = 0;
-    name1.encode.bytes = offset - oldOffset;
+    name.encode.bytes = offset - oldOffset;
     return buf;
 };
-name1.encode.bytes = 0;
-name1.decode = function(buf, offset) {
+name.encode.bytes = 0;
+name.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const list = [];
     const oldOffset = offset;
     let len = buf[offset++];
     if (len === 0) {
-        name1.decode.bytes = 1;
+        name.decode.bytes = 1;
         return ".";
     }
     if (len >= 192) {
-        const res = name1.decode(buf, buf.readUInt16BE(offset - 1) - 49152);
-        name1.decode.bytes = 2;
+        const res = name.decode(buf, buf.readUInt16BE(offset - 1) - 49152);
+        name.decode.bytes = 2;
         return res;
     }
     while(len){
         if (len >= 192) {
-            list.push(name1.decode(buf, buf.readUInt16BE(offset - 1) - 49152));
+            list.push(name.decode(buf, buf.readUInt16BE(offset - 1) - 49152));
             offset++;
             break;
         }
@@ -3779,18 +3931,17 @@ name1.decode = function(buf, offset) {
         offset += len;
         len = buf[offset++];
     }
-    name1.decode.bytes = offset - oldOffset;
+    name.decode.bytes = offset - oldOffset;
     return list.join(".");
 };
-name1.decode.bytes = 0;
-name1.encodingLength = function(n) {
+name.decode.bytes = 0;
+name.encodingLength = function(n) {
     if (n === ".") return 1;
-    return Buffer1.byteLength(n) + 2;
+    return Buffer.byteLength(n) + 2;
 };
-const string = {
-};
+const string = {};
 string.encode = function(s, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(string.encodingLength(s));
+    if (!buf) buf = Buffer.allocUnsafe(string.encodingLength(s));
     if (!offset) offset = 0;
     const len = buf.write(s, offset + 1);
     buf[offset] = len;
@@ -3807,10 +3958,9 @@ string.decode = function(buf, offset) {
 };
 string.decode.bytes = 0;
 string.encodingLength = function(s) {
-    return Buffer1.byteLength(s) + 1;
+    return Buffer.byteLength(s) + 1;
 };
-const header = {
-};
+const header = {};
 header.encode = function(h, buf, offset) {
     if (!buf) buf = header.encodingLength(h);
     if (!offset) offset = 0;
@@ -3853,10 +4003,9 @@ header.decode.bytes = 12;
 header.encodingLength = function() {
     return 12;
 };
-const runknown = {
-};
+const runknown = {};
 runknown.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(runknown.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(runknown.encodingLength(data));
     if (!offset) offset = 0;
     buf.writeUInt16BE(data.length, offset);
     data.copy(buf, offset + 2);
@@ -3875,39 +4024,37 @@ runknown.decode.bytes = 0;
 runknown.encodingLength = function(data) {
     return data.length + 2;
 };
-const rns = {
-};
+const rns = {};
 rns.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rns.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rns.encodingLength(data));
     if (!offset) offset = 0;
-    name1.encode(data, buf, offset + 2);
-    buf.writeUInt16BE(name1.encode.bytes, offset);
-    rns.encode.bytes = name1.encode.bytes + 2;
+    name.encode(data, buf, offset + 2);
+    buf.writeUInt16BE(name.encode.bytes, offset);
+    rns.encode.bytes = name.encode.bytes + 2;
     return buf;
 };
 rns.encode.bytes = 0;
 rns.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const len = buf.readUInt16BE(offset);
-    const dd = name1.decode(buf, offset + 2);
+    const dd = name.decode(buf, offset + 2);
     rns.decode.bytes = len + 2;
     return dd;
 };
 rns.decode.bytes = 0;
 rns.encodingLength = function(data) {
-    return name1.encodingLength(data) + 2;
+    return name.encodingLength(data) + 2;
 };
-const rsoa = {
-};
+const rsoa = {};
 rsoa.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rsoa.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rsoa.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
-    name1.encode(data.mname, buf, offset);
-    offset += name1.encode.bytes;
-    name1.encode(data.rname, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(data.mname, buf, offset);
+    offset += name.encode.bytes;
+    name.encode(data.rname, buf, offset);
+    offset += name.encode.bytes;
     buf.writeUInt32BE(data.serial || 0, offset);
     offset += 4;
     buf.writeUInt32BE(data.refresh || 0, offset);
@@ -3926,13 +4073,12 @@ rsoa.encode.bytes = 0;
 rsoa.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    const data = {
-    };
+    const data = {};
     offset += 2;
-    data.mname = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
-    data.rname = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    data.mname = name.decode(buf, offset);
+    offset += name.decode.bytes;
+    data.rname = name.decode(buf, offset);
+    offset += name.decode.bytes;
     data.serial = buf.readUInt32BE(offset);
     offset += 4;
     data.refresh = buf.readUInt32BE(offset);
@@ -3948,23 +4094,22 @@ rsoa.decode = function(buf, offset) {
 };
 rsoa.decode.bytes = 0;
 rsoa.encodingLength = function(data) {
-    return 22 + name1.encodingLength(data.mname) + name1.encodingLength(data.rname);
+    return 22 + name.encodingLength(data.mname) + name.encodingLength(data.rname);
 };
-const rtxt = {
-};
+const rtxt = {};
 rtxt.encode = function(data, buf, offset) {
     if (!Array.isArray(data)) data = [
         data
     ];
-    for(let i17 = 0; i17 < data.length; i17++){
-        if (typeof data[i17] === "string") {
-            data[i17] = Buffer1.from(data[i17]);
+    for(let i20 = 0; i20 < data.length; i20++){
+        if (typeof data[i20] === "string") {
+            data[i20] = Buffer.from(data[i20]);
         }
-        if (!Buffer1.isBuffer(data[i17])) {
+        if (!Buffer.isBuffer(data[i20])) {
             throw new Error("Must be a Buffer");
         }
     }
-    if (!buf) buf = Buffer1.allocUnsafe(rtxt.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rtxt.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
@@ -4005,20 +4150,19 @@ rtxt.encodingLength = function(data) {
     let length = 2;
     data.forEach(function(buf) {
         if (typeof buf === "string") {
-            length += Buffer1.byteLength(buf) + 1;
+            length += Buffer.byteLength(buf) + 1;
         } else {
             length += buf.length + 1;
         }
     });
     return length;
 };
-const rnull = {
-};
+const rnull = {};
 rnull.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rnull.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rnull.encodingLength(data));
     if (!offset) offset = 0;
-    if (typeof data === "string") data = Buffer1.from(data);
-    if (!data) data = Buffer1.allocUnsafe(0);
+    if (typeof data === "string") data = Buffer.from(data);
+    if (!data) data = Buffer.allocUnsafe(0);
     const oldOffset = offset;
     offset += 2;
     const len = data.length;
@@ -4042,12 +4186,11 @@ rnull.decode = function(buf, offset) {
 rnull.decode.bytes = 0;
 rnull.encodingLength = function(data) {
     if (!data) return 2;
-    return (Buffer1.isBuffer(data) ? data.length : Buffer1.byteLength(data)) + 2;
+    return (Buffer.isBuffer(data) ? data.length : Buffer.byteLength(data)) + 2;
 };
-const rhinfo = {
-};
+const rhinfo = {};
 rhinfo.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rhinfo.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rhinfo.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
@@ -4063,8 +4206,7 @@ rhinfo.encode.bytes = 0;
 rhinfo.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    const data = {
-    };
+    const data = {};
     offset += 2;
     data.cpu = string.decode(buf, offset);
     offset += string.decode.bytes;
@@ -4077,39 +4219,37 @@ rhinfo.decode.bytes = 0;
 rhinfo.encodingLength = function(data) {
     return string.encodingLength(data.cpu) + string.encodingLength(data.os) + 2;
 };
-const rptr = {
-};
+const rptr = {};
 const rcname = rptr;
 const rdname = rptr;
 rptr.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rptr.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rptr.encodingLength(data));
     if (!offset) offset = 0;
-    name1.encode(data, buf, offset + 2);
-    buf.writeUInt16BE(name1.encode.bytes, offset);
-    rptr.encode.bytes = name1.encode.bytes + 2;
+    name.encode(data, buf, offset + 2);
+    buf.writeUInt16BE(name.encode.bytes, offset);
+    rptr.encode.bytes = name.encode.bytes + 2;
     return buf;
 };
 rptr.encode.bytes = 0;
 rptr.decode = function(buf, offset) {
     if (!offset) offset = 0;
-    const data = name1.decode(buf, offset + 2);
-    rptr.decode.bytes = name1.decode.bytes + 2;
+    const data = name.decode(buf, offset + 2);
+    rptr.decode.bytes = name.decode.bytes + 2;
     return data;
 };
 rptr.decode.bytes = 0;
 rptr.encodingLength = function(data) {
-    return name1.encodingLength(data) + 2;
+    return name.encodingLength(data) + 2;
 };
-const rsrv = {
-};
+const rsrv = {};
 rsrv.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rsrv.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rsrv.encodingLength(data));
     if (!offset) offset = 0;
     buf.writeUInt16BE(data.priority || 0, offset + 2);
     buf.writeUInt16BE(data.weight || 0, offset + 4);
     buf.writeUInt16BE(data.port || 0, offset + 6);
-    name1.encode(data.target, buf, offset + 8);
-    const len = name1.encode.bytes + 6;
+    name.encode(data.target, buf, offset + 8);
+    const len = name.encode.bytes + 6;
     buf.writeUInt16BE(len, offset);
     rsrv.encode.bytes = len + 2;
     return buf;
@@ -4118,25 +4258,23 @@ rsrv.encode.bytes = 0;
 rsrv.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const len = buf.readUInt16BE(offset);
-    const data = {
-    };
+    const data = {};
     data.priority = buf.readUInt16BE(offset + 2);
     data.weight = buf.readUInt16BE(offset + 4);
     data.port = buf.readUInt16BE(offset + 6);
-    data.target = name1.decode(buf, offset + 8);
+    data.target = name.decode(buf, offset + 8);
     rsrv.decode.bytes = len + 2;
     return data;
 };
 rsrv.decode.bytes = 0;
 rsrv.encodingLength = function(data) {
-    return 8 + name1.encodingLength(data.target);
+    return 8 + name.encodingLength(data.target);
 };
-const rcaa = {
-};
+const rcaa = {};
 rcaa.ISSUER_CRITICAL = 1 << 7;
 rcaa.encode = function(data, buf, offset) {
     const len = rcaa.encodingLength(data);
-    if (!buf) buf = Buffer1.allocUnsafe(rcaa.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rcaa.encodingLength(data));
     if (!offset) offset = 0;
     if (data.issuerCritical) {
         data.flags = rcaa.ISSUER_CRITICAL;
@@ -4148,7 +4286,7 @@ rcaa.encode = function(data, buf, offset) {
     string.encode(data.tag, buf, offset);
     offset += string.encode.bytes;
     buf.write(data.value, offset);
-    offset += Buffer1.byteLength(data.value);
+    offset += Buffer.byteLength(data.value);
     rcaa.encode.bytes = len;
     return buf;
 };
@@ -4158,8 +4296,7 @@ rcaa.decode = function(buf, offset) {
     const len = buf.readUInt16BE(offset);
     offset += 2;
     const oldOffset = offset;
-    const data = {
-    };
+    const data = {};
     data.flags = buf.readUInt8(offset);
     offset += 1;
     data.tag = string.decode(buf, offset);
@@ -4173,17 +4310,16 @@ rcaa.decode.bytes = 0;
 rcaa.encodingLength = function(data) {
     return string.encodingLength(data.tag) + string.encodingLength(data.value) + 2;
 };
-const rmx = {
-};
+const rmx = {};
 rmx.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rmx.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rmx.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
     buf.writeUInt16BE(data.preference || 0, offset);
     offset += 2;
-    name1.encode(data.exchange, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(data.exchange, buf, offset);
+    offset += name.encode.bytes;
     buf.writeUInt16BE(offset - oldOffset - 2, oldOffset);
     rmx.encode.bytes = offset - oldOffset;
     return buf;
@@ -4192,23 +4328,21 @@ rmx.encode.bytes = 0;
 rmx.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    const data = {
-    };
+    const data = {};
     offset += 2;
     data.preference = buf.readUInt16BE(offset);
     offset += 2;
-    data.exchange = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    data.exchange = name.decode(buf, offset);
+    offset += name.decode.bytes;
     rmx.decode.bytes = offset - oldOffset;
     return data;
 };
 rmx.encodingLength = function(data) {
-    return 4 + name1.encodingLength(data.exchange);
+    return 4 + name.encodingLength(data.exchange);
 };
-const ra = {
-};
+const ra = {};
 ra.encode = function(host, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(ra.encodingLength(host));
+    if (!buf) buf = Buffer.allocUnsafe(ra.encodingLength(host));
     if (!offset) offset = 0;
     buf.writeUInt16BE(4, offset);
     offset += 2;
@@ -4228,10 +4362,9 @@ ra.decode.bytes = 0;
 ra.encodingLength = function() {
     return 6;
 };
-const raaaa = {
-};
+const raaaa = {};
 raaaa.encode = function(host, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(raaaa.encodingLength(host));
+    if (!buf) buf = Buffer.allocUnsafe(raaaa.encodingLength(host));
     if (!offset) offset = 0;
     buf.writeUInt16BE(16, offset);
     offset += 2;
@@ -4251,10 +4384,9 @@ raaaa.decode.bytes = 0;
 raaaa.encodingLength = function() {
     return 18;
 };
-const roption = {
-};
+const roption = {};
 roption.encode = function(option, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(roption.encodingLength(option));
+    if (!buf) buf = Buffer.allocUnsafe(roption.encodingLength(option));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const code = toCode(option.code);
@@ -4318,8 +4450,7 @@ roption.encode = function(option, buf, offset) {
 roption.encode.bytes = 0;
 roption.decode = function(buf, offset) {
     if (!offset) offset = 0;
-    const option = {
-    };
+    const option = {};
     option.code = buf.readUInt16BE(offset);
     option.type = toString4(option.code);
     offset += 2;
@@ -4332,7 +4463,7 @@ roption.decode = function(buf, offset) {
             offset += 2;
             option.sourcePrefixLength = buf.readUInt8(offset++);
             option.scopePrefixLength = buf.readUInt8(offset++);
-            const padded = Buffer1.alloc(option.family === 1 ? 4 : 16);
+            const padded = Buffer.alloc(option.family === 1 ? 4 : 16);
             buf.copy(padded, 0, offset, offset + len - 4);
             option.ip = ip.toString(padded);
             break;
@@ -4344,7 +4475,7 @@ roption.decode = function(buf, offset) {
             break;
         case 14:
             option.tags = [];
-            for(let i18 = 0; i18 < len; i18 += 2){
+            for(let i21 = 0; i21 < len; i21 += 2){
                 option.tags.push(buf.readUInt16BE(offset));
                 offset += 2;
             }
@@ -4371,10 +4502,9 @@ roption.encodingLength = function(option) {
     }
     throw new Error(`Unknown roption code: ${option.code}`);
 };
-const ropt = {
-};
+const ropt = {};
 ropt.encode = function(options, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(ropt.encodingLength(options));
+    if (!buf) buf = Buffer.allocUnsafe(ropt.encodingLength(options));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const rdlen = encodingLengthList(options, roption);
@@ -4403,17 +4533,16 @@ ropt.decode.bytes = 0;
 ropt.encodingLength = function(options) {
     return 2 + encodingLengthList(options || [], roption);
 };
-const rdnskey = {
-};
+const rdnskey = {};
 rdnskey.PROTOCOL_DNSSEC = 3;
 rdnskey.ZONE_KEY = 128;
 rdnskey.SECURE_ENTRYPOINT = 32768;
 rdnskey.encode = function(key, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rdnskey.encodingLength(key));
+    if (!buf) buf = Buffer.allocUnsafe(rdnskey.encodingLength(key));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const keydata = key.key;
-    if (!Buffer1.isBuffer(keydata)) {
+    if (!Buffer.isBuffer(keydata)) {
         throw new Error("Key must be a Buffer");
     }
     offset += 2;
@@ -4433,8 +4562,7 @@ rdnskey.encode.bytes = 0;
 rdnskey.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    var key = {
-    };
+    var key = {};
     var length = buf.readUInt16BE(offset);
     offset += 2;
     key.flags = buf.readUInt16BE(offset);
@@ -4452,16 +4580,15 @@ rdnskey.decode = function(buf, offset) {
 };
 rdnskey.decode.bytes = 0;
 rdnskey.encodingLength = function(key) {
-    return 6 + Buffer1.byteLength(key.key);
+    return 6 + Buffer.byteLength(key.key);
 };
-const rrrsig = {
-};
+const rrrsig = {};
 rrrsig.encode = function(sig, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rrrsig.encodingLength(sig));
+    if (!buf) buf = Buffer.allocUnsafe(rrrsig.encodingLength(sig));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const signature = sig.signature;
-    if (!Buffer1.isBuffer(signature)) {
+    if (!Buffer.isBuffer(signature)) {
         throw new Error("Signature must be a Buffer");
     }
     offset += 2;
@@ -4479,8 +4606,8 @@ rrrsig.encode = function(sig, buf, offset) {
     offset += 4;
     buf.writeUInt16BE(sig.keyTag, offset);
     offset += 2;
-    name1.encode(sig.signersName, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(sig.signersName, buf, offset);
+    offset += name.encode.bytes;
     signature.copy(buf, offset, 0, signature.length);
     offset += signature.length;
     rrrsig.encode.bytes = offset - oldOffset;
@@ -4491,8 +4618,7 @@ rrrsig.encode.bytes = 0;
 rrrsig.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    var sig = {
-    };
+    var sig = {};
     var length = buf.readUInt16BE(offset);
     offset += 2;
     sig.typeCovered = toString(buf.readUInt16BE(offset));
@@ -4509,8 +4635,8 @@ rrrsig.decode = function(buf, offset) {
     offset += 4;
     sig.keyTag = buf.readUInt16BE(offset);
     offset += 2;
-    sig.signersName = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    sig.signersName = name.decode(buf, offset);
+    offset += name.decode.bytes;
     sig.signature = buf.slice(offset, oldOffset + length + 2);
     offset += sig.signature.length;
     rrrsig.decode.bytes = offset - oldOffset;
@@ -4518,19 +4644,18 @@ rrrsig.decode = function(buf, offset) {
 };
 rrrsig.decode.bytes = 0;
 rrrsig.encodingLength = function(sig) {
-    return 20 + name1.encodingLength(sig.signersName) + Buffer1.byteLength(sig.signature);
+    return 20 + name.encodingLength(sig.signersName) + Buffer.byteLength(sig.signature);
 };
-const rrp = {
-};
+const rrp = {};
 rrp.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rrp.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rrp.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
-    name1.encode(data.mbox || ".", buf, offset);
-    offset += name1.encode.bytes;
-    name1.encode(data.txt || ".", buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(data.mbox || ".", buf, offset);
+    offset += name.encode.bytes;
+    name.encode(data.txt || ".", buf, offset);
+    offset += name.encode.bytes;
     rrp.encode.bytes = offset - oldOffset;
     buf.writeUInt16BE(rrp.encode.bytes - 2, oldOffset);
     return buf;
@@ -4539,38 +4664,36 @@ rrp.encode.bytes = 0;
 rrp.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    const data = {
-    };
+    const data = {};
     offset += 2;
-    data.mbox = name1.decode(buf, offset) || ".";
-    offset += name1.decode.bytes;
-    data.txt = name1.decode(buf, offset) || ".";
-    offset += name1.decode.bytes;
+    data.mbox = name.decode(buf, offset) || ".";
+    offset += name.decode.bytes;
+    data.txt = name.decode(buf, offset) || ".";
+    offset += name.decode.bytes;
     rrp.decode.bytes = offset - oldOffset;
     return data;
 };
 rrp.decode.bytes = 0;
 rrp.encodingLength = function(data) {
-    return 2 + name1.encodingLength(data.mbox || ".") + name1.encodingLength(data.txt || ".");
+    return 2 + name.encodingLength(data.mbox || ".") + name.encodingLength(data.txt || ".");
 };
-const typebitmap = {
-};
+const typebitmap = {};
 typebitmap.encode = function(typelist, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(typebitmap.encodingLength(typelist));
+    if (!buf) buf = Buffer.allocUnsafe(typebitmap.encodingLength(typelist));
     if (!offset) offset = 0;
     const oldOffset = offset;
     var typesByWindow = [];
-    for(var i19 = 0; i19 < typelist.length; i19++){
-        var typeid = toType(typelist[i19]);
+    for(var i22 = 0; i22 < typelist.length; i22++){
+        var typeid = toType(typelist[i22]);
         if (typesByWindow[typeid >> 8] === undefined) {
             typesByWindow[typeid >> 8] = [];
         }
         typesByWindow[typeid >> 8][typeid >> 3 & 31] |= 1 << 7 - (typeid & 7);
     }
-    for(i19 = 0; i19 < typesByWindow.length; i19++){
-        if (typesByWindow[i19] !== undefined) {
-            var windowBuf = Buffer1.from(typesByWindow[i19]);
-            buf.writeUInt8(i19, offset);
+    for(i22 = 0; i22 < typesByWindow.length; i22++){
+        if (typesByWindow[i22] !== undefined) {
+            var windowBuf = Buffer.from(typesByWindow[i22]);
+            buf.writeUInt8(i22, offset);
             offset += 1;
             buf.writeUInt8(windowBuf.length, offset);
             offset += 1;
@@ -4591,11 +4714,11 @@ typebitmap.decode = function(buf, offset, length) {
         offset += 1;
         var windowLength = buf.readUInt8(offset);
         offset += 1;
-        for(var i20 = 0; i20 < windowLength; i20++){
-            var b = buf.readUInt8(offset + i20);
+        for(var i23 = 0; i23 < windowLength; i23++){
+            var b = buf.readUInt8(offset + i23);
             for(var j = 0; j < 8; j++){
                 if (b & 1 << 7 - j) {
-                    var typeid = toString(window << 8 | i20 << 3 | j);
+                    var typeid = toString(window << 8 | i23 << 3 | j);
                     typelist.push(typeid);
                 }
             }
@@ -4608,27 +4731,26 @@ typebitmap.decode = function(buf, offset, length) {
 typebitmap.decode.bytes = 0;
 typebitmap.encodingLength = function(typelist) {
     var extents = [];
-    for(var i21 = 0; i21 < typelist.length; i21++){
-        var typeid = toType(typelist[i21]);
+    for(var i24 = 0; i24 < typelist.length; i24++){
+        var typeid = toType(typelist[i24]);
         extents[typeid >> 8] = Math.max(extents[typeid >> 8] || 0, typeid & 255);
     }
     var len = 0;
-    for(i21 = 0; i21 < extents.length; i21++){
-        if (extents[i21] !== undefined) {
-            len += 2 + Math.ceil((extents[i21] + 1) / 8);
+    for(i24 = 0; i24 < extents.length; i24++){
+        if (extents[i24] !== undefined) {
+            len += 2 + Math.ceil((extents[i24] + 1) / 8);
         }
     }
     return len;
 };
-const rnsec = {
-};
+const rnsec = {};
 rnsec.encode = function(record, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rnsec.encodingLength(record));
+    if (!buf) buf = Buffer.allocUnsafe(rnsec.encodingLength(record));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
-    name1.encode(record.nextDomain, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(record.nextDomain, buf, offset);
+    offset += name.encode.bytes;
     typebitmap.encode(record.rrtypes, buf, offset);
     offset += typebitmap.encode.bytes;
     rnsec.encode.bytes = offset - oldOffset;
@@ -4639,12 +4761,11 @@ rnsec.encode.bytes = 0;
 rnsec.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    var record = {
-    };
+    var record = {};
     var length = buf.readUInt16BE(offset);
     offset += 2;
-    record.nextDomain = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    record.nextDomain = name.decode(buf, offset);
+    offset += name.decode.bytes;
     record.rrtypes = typebitmap.decode(buf, offset, length - (offset - oldOffset));
     offset += typebitmap.decode.bytes;
     rnsec.decode.bytes = offset - oldOffset;
@@ -4652,20 +4773,19 @@ rnsec.decode = function(buf, offset) {
 };
 rnsec.decode.bytes = 0;
 rnsec.encodingLength = function(record) {
-    return 2 + name1.encodingLength(record.nextDomain) + typebitmap.encodingLength(record.rrtypes);
+    return 2 + name.encodingLength(record.nextDomain) + typebitmap.encodingLength(record.rrtypes);
 };
-const rnsec3 = {
-};
+const rnsec3 = {};
 rnsec3.encode = function(record, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rnsec3.encodingLength(record));
+    if (!buf) buf = Buffer.allocUnsafe(rnsec3.encodingLength(record));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const salt = record.salt;
-    if (!Buffer1.isBuffer(salt)) {
+    if (!Buffer.isBuffer(salt)) {
         throw new Error("salt must be a Buffer");
     }
     const nextDomain = record.nextDomain;
-    if (!Buffer1.isBuffer(nextDomain)) {
+    if (!Buffer.isBuffer(nextDomain)) {
         throw new Error("nextDomain must be a Buffer");
     }
     offset += 2;
@@ -4693,8 +4813,7 @@ rnsec3.encode.bytes = 0;
 rnsec3.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    var record = {
-    };
+    var record = {};
     var length = buf.readUInt16BE(offset);
     offset += 2;
     record.algorithm = buf.readUInt8(offset);
@@ -4720,14 +4839,13 @@ rnsec3.decode.bytes = 0;
 rnsec3.encodingLength = function(record) {
     return 8 + record.salt.length + record.nextDomain.length + typebitmap.encodingLength(record.rrtypes);
 };
-const rds = {
-};
+const rds = {};
 rds.encode = function(digest, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rds.encodingLength(digest));
+    if (!buf) buf = Buffer.allocUnsafe(rds.encodingLength(digest));
     if (!offset) offset = 0;
     const oldOffset = offset;
     const digestdata = digest.digest;
-    if (!Buffer1.isBuffer(digestdata)) {
+    if (!Buffer.isBuffer(digestdata)) {
         throw new Error("Digest must be a Buffer");
     }
     offset += 2;
@@ -4747,8 +4865,7 @@ rds.encode.bytes = 0;
 rds.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    var digest = {
-    };
+    var digest = {};
     var length = buf.readUInt16BE(offset);
     offset += 2;
     digest.keyTag = buf.readUInt16BE(offset);
@@ -4764,24 +4881,21 @@ rds.decode = function(buf, offset) {
 };
 rds.decode.bytes = 0;
 rds.encodingLength = function(digest) {
-    return 6 + Buffer1.byteLength(digest.digest);
+    return 6 + Buffer.byteLength(digest.digest);
 };
-const rhttpsvcb = {
-};
+const rhttpsvcb = {};
 rhttpsvcb.decode = function(buf, offset) {
     if (!offset) offset = 0;
     let oldOffset = offset;
     const rLen = buf.readUInt16BE(offset) + 2;
     console.log("Rdata length : " + rLen);
     offset += 2;
-    let data = {
-    };
+    let data = {};
     data.svcPriority = buf.readUInt16BE(offset);
     offset += 2;
-    data.targetName = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
-    data.svcParams = {
-    };
+    data.targetName = name.decode(buf, offset);
+    offset += name.decode.bytes;
+    data.svcParams = {};
     let svcKeyDecode;
     let svcParamKey;
     let svcKeyStr;
@@ -4798,14 +4912,14 @@ rhttpsvcb.decode = function(buf, offset) {
 };
 rhttpsvcb.decode.bytes = 0;
 rhttpsvcb.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(rhttpsvcb.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(rhttpsvcb.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
     buf.writeUInt16BE(data.svcPriority, offset);
     offset += 2;
-    name1.encode(data.targetName, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(data.targetName, buf, offset);
+    offset += name.encode.bytes;
     let svcbObj;
     for (let key of Object.keys(data.svcParams)){
         buf.writeUInt16BE(toKey(key), offset);
@@ -4820,7 +4934,7 @@ rhttpsvcb.encode = function(data, buf, offset) {
 };
 rhttpsvcb.encode.bytes = 0;
 rhttpsvcb.encodingLength = function(data) {
-    var encLen = 4 + name1.encodingLength(data.targetName);
+    var encLen = 4 + name.encodingLength(data.targetName);
     let svcbObj;
     for (let key of Object.keys(data.svcParams)){
         svcbObj = svcbKeyObj(key);
@@ -4829,8 +4943,7 @@ rhttpsvcb.encodingLength = function(data) {
     console.log(encLen);
     return encLen;
 };
-const svcAlpn = {
-};
+const svcAlpn = {};
 svcAlpn.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -4851,12 +4964,12 @@ svcAlpn.decode = function(buf, offset) {
 };
 svcAlpn.decode.bytes = 0;
 svcAlpn.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcAlpn.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcAlpn.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
     for (let value of data){
-        buf.writeUInt8(Buffer1.byteLength(value), offset);
+        buf.writeUInt8(Buffer.byteLength(value), offset);
         offset += 1;
         offset += buf.write(value, offset);
     }
@@ -4868,12 +4981,11 @@ svcAlpn.encode.bytes = 0;
 svcAlpn.encodingLength = function(data) {
     var encLen = 2;
     for (let value of data){
-        encLen += 1 + Buffer1.byteLength(value);
+        encLen += 1 + Buffer.byteLength(value);
     }
     return encLen;
 };
-const svcIpv6 = {
-};
+const svcIpv6 = {};
 svcIpv6.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -4890,7 +5002,7 @@ svcIpv6.decode = function(buf, offset) {
 };
 svcIpv6.decode.bytes = 0;
 svcIpv6.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcIpv6.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcIpv6.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     buf.writeUInt16BE(data.length * 16, offset);
@@ -4906,8 +5018,7 @@ svcIpv6.encode.bytes = 0;
 svcIpv6.encodingLength = function(data) {
     return 2 + data.length * 16;
 };
-const svcIpv4 = {
-};
+const svcIpv4 = {};
 svcIpv4.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -4924,7 +5035,7 @@ svcIpv4.decode = function(buf, offset) {
 };
 svcIpv4.decode.bytes = 0;
 svcIpv4.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcIpv4.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcIpv4.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     buf.writeUInt16BE(data.length * 4, offset);
@@ -4940,8 +5051,7 @@ svcIpv4.encode.bytes = 0;
 svcIpv4.encodingLength = function(data) {
     return 2 + data.length * 4;
 };
-const svcMandatory = {
-};
+const svcMandatory = {};
 svcMandatory.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -4958,7 +5068,7 @@ svcMandatory.decode = function(buf, offset) {
 };
 svcMandatory.decode.bytes = 0;
 svcMandatory.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcMandatory.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcMandatory.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     buf.writeUInt16BE(data.length * 2, offset);
@@ -4974,8 +5084,7 @@ svcMandatory.encode.bytes = 0;
 svcMandatory.encodingLength = function(data) {
     return 2 + data.length * 2;
 };
-const svcPort = {
-};
+const svcPort = {};
 svcPort.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -4992,7 +5101,7 @@ svcPort.decode = function(buf, offset) {
 };
 svcPort.decode.bytes = 0;
 svcPort.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcPort.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcPort.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     buf.writeUInt16BE(data.length * 2, offset);
@@ -5008,8 +5117,7 @@ svcPort.encode.bytes = 0;
 svcPort.encodingLength = function(data) {
     return 2 + data.length * 2;
 };
-const svcEch = {
-};
+const svcEch = {};
 svcEch.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -5023,7 +5131,7 @@ svcEch.decode = function(buf, offset) {
 };
 svcEch.decode.bytes = 0;
 svcEch.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcEch.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcEch.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     offset += 2;
@@ -5034,10 +5142,9 @@ svcEch.encode = function(data, buf, offset) {
 };
 svcEch.encode.bytes = 0;
 svcEch.encodingLength = function(data) {
-    return 2 + Buffer1.from(data, "base64").byteLength;
+    return 2 + Buffer.from(data, "base64").byteLength;
 };
-const svcOther = {
-};
+const svcOther = {};
 svcOther.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
@@ -5051,7 +5158,7 @@ svcOther.decode = function(buf, offset) {
 };
 svcOther.decode.bytes = 0;
 svcOther.encode = function(data, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(svcOther.encodingLength(data));
+    if (!buf) buf = Buffer.allocUnsafe(svcOther.encodingLength(data));
     if (!offset) offset = 0;
     const oldOffset = offset;
     buf.writeUInt16BE(data.byteLength, offset);
@@ -5133,14 +5240,13 @@ const renc = function(type) {
     }
     return runknown;
 };
-const answer = {
-};
+const answer = {};
 answer.encode = function(a, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(answer.encodingLength(a));
+    if (!buf) buf = Buffer.allocUnsafe(answer.encodingLength(a));
     if (!offset) offset = 0;
     const oldOffset = offset;
-    name1.encode(a.name, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(a.name, buf, offset);
+    offset += name.encode.bytes;
     buf.writeUInt16BE(toType(a.type), offset);
     if (a.type.toUpperCase() === "OPT") {
         if (a.name !== ".") {
@@ -5169,11 +5275,10 @@ answer.encode = function(a, buf, offset) {
 answer.encode.bytes = 0;
 answer.decode = function(buf, offset) {
     if (!offset) offset = 0;
-    const a = {
-    };
+    const a = {};
     const oldOffset = offset;
-    a.name = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    a.name = name.decode(buf, offset);
+    offset += name.decode.bytes;
     a.type = toString(buf.readUInt16BE(offset));
     if (a.type === "OPT") {
         a.udpPayloadSize = buf.readUInt16BE(offset + 2);
@@ -5198,16 +5303,15 @@ answer.decode = function(buf, offset) {
 answer.decode.bytes = 0;
 answer.encodingLength = function(a) {
     const data = a.data !== null && a.data !== undefined ? a.data : a.options;
-    return name1.encodingLength(a.name) + 8 + renc(a.type).encodingLength(data);
+    return name.encodingLength(a.name) + 8 + renc(a.type).encodingLength(data);
 };
-const question = {
-};
+const question = {};
 question.encode = function(q, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(question.encodingLength(q));
+    if (!buf) buf = Buffer.allocUnsafe(question.encodingLength(q));
     if (!offset) offset = 0;
     const oldOffset = offset;
-    name1.encode(q.name, buf, offset);
-    offset += name1.encode.bytes;
+    name.encode(q.name, buf, offset);
+    offset += name.encode.bytes;
     buf.writeUInt16BE(toType(q.type), offset);
     offset += 2;
     buf.writeUInt16BE(toClass(q.class === undefined ? "IN" : q.class), offset);
@@ -5219,10 +5323,9 @@ question.encode.bytes = 0;
 question.decode = function(buf, offset) {
     if (!offset) offset = 0;
     const oldOffset = offset;
-    const q = {
-    };
-    q.name = name1.decode(buf, offset);
-    offset += name1.decode.bytes;
+    const q = {};
+    q.name = name.decode(buf, offset);
+    offset += name.decode.bytes;
     q.type = toString(buf.readUInt16BE(offset));
     offset += 2;
     q.class = toString3(buf.readUInt16BE(offset));
@@ -5234,10 +5337,10 @@ question.decode = function(buf, offset) {
 };
 question.decode.bytes = 0;
 question.encodingLength = function(q) {
-    return name1.encodingLength(q.name) + 4;
+    return name.encodingLength(q.name) + 4;
 };
 const encode2 = function(result, buf, offset) {
-    if (!buf) buf = Buffer1.allocUnsafe(encodingLength(result));
+    if (!buf) buf = Buffer.allocUnsafe(encodingLength(result));
     if (!offset) offset = 0;
     const oldOffset = offset;
     if (!result.questions) result.questions = [];
@@ -5272,9 +5375,9 @@ const encodingLength = function(result) {
 };
 const streamEncode = function(result) {
     const buf = encode2(result);
-    const sbuf = Buffer1.allocUnsafe(2);
+    const sbuf = Buffer.allocUnsafe(2);
     sbuf.writeUInt16BE(buf.byteLength);
-    const combine = Buffer1.concat([
+    const combine = Buffer.concat([
         sbuf,
         buf
     ]);
@@ -5294,26 +5397,25 @@ const streamDecode = function(sbuf) {
 streamDecode.bytes = 0;
 function encodingLengthList(list, enc) {
     let len = 0;
-    for(let i22 = 0; i22 < list.length; i22++)len += enc.encodingLength(list[i22]);
+    for(let i25 = 0; i25 < list.length; i25++)len += enc.encodingLength(list[i25]);
     return len;
 }
 function encodeList(list, enc, buf, offset) {
-    for(let i23 = 0; i23 < list.length; i23++){
-        enc.encode(list[i23], buf, offset);
+    for(let i26 = 0; i26 < list.length; i26++){
+        enc.encode(list[i26], buf, offset);
         offset += enc.encode.bytes;
     }
     return offset;
 }
 function decodeList(list, enc, buf, offset) {
-    for(let i24 = 0; i24 < list.length; i24++){
-        list[i24] = enc.decode(buf, offset);
+    for(let i27 = 0; i27 < list.length; i27++){
+        list[i27] = enc.decode(buf, offset);
         offset += enc.decode.bytes;
     }
     return offset;
 }
 class DNSParserWrap {
-    constructor(){
-    }
+    constructor(){}
     decode(arrayBuffer) {
         return decode2(bufferOf(arrayBuffer));
     }
@@ -5356,16 +5458,13 @@ function validateSize(sz) {
     return sz >= minDNSPacketSize && sz <= 4096;
 }
 function hasAnswers(packet) {
-    return packet && packet.answers && packet.answers.length > 0;
+    return !emptyObj(packet) && !emptyArray(packet.answers);
 }
 function hasSingleQuestion(packet) {
-    return packet && packet.questions && packet.questions.length === 1;
+    return !emptyObj(packet) && !emptyArray(packet.questions) && packet.questions.length === 1;
 }
 function rcodeNoError(packet) {
     return packet && packet.rcode === "NOERROR";
-}
-function dnsqurl(dnsq) {
-    return btoa(String.fromCharCode(...new Uint8Array(dnsq))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 function optAnswer(a) {
     return a && a.type && a.type.toUpperCase() === "OPT";
@@ -5380,58 +5479,87 @@ function isBlockable(packet) {
     return hasSingleQuestion(packet) && (packet.questions[0].type === "A" || packet.questions[0].type === "AAAA" || packet.questions[0].type === "CNAME" || packet.questions[0].type === "HTTPS" || packet.questions[0].type === "SVCB");
 }
 function isCname(packet) {
-    return hasAnswers(packet) && packet.answers[0].type === "CNAME";
+    return hasAnswers(packet) && isAnswerCname(packet.answers[0]);
+}
+function isAnswerCname(ans) {
+    return !emptyObj(ans) && !emptyString(ans.type) && ans.type === "CNAME";
 }
 function isHttps(packet) {
-    return hasAnswers(packet) && (packet.answers[0].type === "HTTPS" || packet.answers[0].type === "SVCB");
+    return hasAnswers(packet) && isAnswerHttps(packet.answers[0]);
 }
-function getCname(answers) {
-    const li = [];
-    li[0] = answers[0].data.trim().toLowerCase();
-    li[1] = answers[answers.length - 1].name.trim().toLowerCase();
-    return li;
+function isAnswerHttps(ans) {
+    return !emptyObj(ans) && !emptyString(ans.type) && (ans.type === "HTTPS" || ans.type === "SVCB");
 }
-function getTargetName(answers) {
-    const tn = answers[0].data.targetName.trim().toLowerCase();
-    if (tn === ".") return false;
-    return tn;
+function extractDomains(dnsPacket) {
+    if (!hasSingleQuestion(dnsPacket)) return [];
+    const names = new Set();
+    const answers = dnsPacket.answers;
+    const q = normalizeName(dnsPacket.questions[0].name);
+    names.add(q);
+    if (emptyArray(answers)) return [
+        ...names
+    ];
+    for (const a of answers){
+        if (a && !emptyString(a.name)) {
+            const n = normalizeName(a.name);
+            names.add(n);
+        }
+        if (isAnswerCname(a) && !emptyString(a.data)) {
+            const n = normalizeName(a.data);
+            names.add(n);
+        } else if (isAnswerHttps(a) && a.data && !emptyString(a.data.targetName)) {
+            const n = normalizeName(a.data.targetName);
+            if (n !== ".") names.add(n);
+        }
+    }
+    return [
+        ...names
+    ];
 }
 function getQueryName(questions) {
-    const qn = questions[0].name.trim().toLowerCase();
-    if (qn === "") return false;
-    return qn;
+    const qn = normalizeName(questions[0].name);
+    return emptyString(qn) ? false : qn;
+}
+function normalizeName(n) {
+    if (emptyString(n)) return n;
+    return n.trim().toLowerCase();
+}
+function hasBlockstamp(blockInfo) {
+    return !emptyObj(blockInfo) && !emptyString(blockInfo.userBlocklistFlagUint);
 }
 class DNSQuestionBlock {
     constructor(){
         this.log = log.withTags("DnsQuestionBlock");
     }
     async RethinkModule(param) {
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = false;
+        let response = emptyResponse();
         try {
             response.data = this.dnsBlock(param);
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "DNSQuestionBlock RethinkModule";
             this.log.e(param.rxid, "main", e);
+            response = errResponse("DNSQuestionBlock", e);
         }
         return response;
     }
     dnsBlock(param) {
-        const response = this.performBlocking(param.userBlocklistInfo, param.requestDecodedDnsPacket, param.blocklistFilter, false);
+        const response = this.performBlocking(param.rxid, param.userBlocklistInfo, param.requestDecodedDnsPacket, param.blocklistFilter, false);
         if (response && response.isBlocked) {
             this.log.d(param.rxid, "cache block-response");
             putCache(param.dnsCache, param.request.url, param.blocklistFilter, param.requestDecodedDnsPacket, "", param.event);
         }
         return response;
     }
-    performBlocking(blockInfo, dnsPacket, blf, cf) {
-        if (emptyString(blockInfo.userBlocklistFlagUint) || !isBlockable(dnsPacket)) {
+    performBlocking(rxid, blockInfo, dnsPacket, blf, cf) {
+        if (!cf && !blf) {
+            this.log.w(rxid, "no cf and blf");
+            return false;
+        }
+        if (!hasBlockstamp(blockInfo)) {
+            this.log.d(rxid, "no user-set blockstamp");
+            return false;
+        }
+        if (!isBlockable(dnsPacket)) {
+            this.log.d(rxid, "not a blockable dns-query");
             return false;
         }
         const qn = getQueryName(dnsPacket.questions);
@@ -5513,12 +5641,12 @@ DNSResolver.prototype.resolveDnsUpstream = async function(rxid, request, resolve
     u.port = dnsResolverUrl.port;
     u.protocol = dnsResolverUrl.protocol;
     let newRequest = null;
-    if (request.method === "GET") {
-        u.search = "?dns=" + dnsqurl(requestBodyBuffer);
+    if (isGetRequest(request)) {
+        u.search = "?dns=" + bytesToBase64Url(requestBodyBuffer);
         newRequest = new Request(u.href, {
             method: "GET"
         });
-    } else if (request.method === "POST") {
+    } else if (isPostRequest(request)) {
         newRequest = new Request(u.href, {
             method: "POST",
             headers: concatHeaders(contentLengthHeader(requestBodyBuffer), dnsHeaders()),
@@ -5557,7 +5685,7 @@ DNSResolver.prototype.doh2 = async function(rxid, request) {
                 resBuffers.push(chunk);
             });
             req.on("end", ()=>{
-                const resB = Buffer1.concat(resBuffers);
+                const resB = Buffer.concat(resBuffers);
                 c.close();
                 resolve(new Response(resB, resH));
             });
@@ -5569,30 +5697,13 @@ DNSResolver.prototype.doh2 = async function(rxid, request) {
     });
 };
 const ttlGraceSec = 30;
-function generateQuestionFilter(blf, dnsPacket) {
-    const q = dnsPacket.questions[0].name;
-    return {
-        [q]: objOf(blf.getDomainInfo(q).searchResult)
-    };
-}
-function generateAnswerFilter(blf, dnsPacket) {
-    if (isCname(dnsPacket)) {
-        const ans = getCname(dnsPacket.answers);
-        return newAnswerCacheFilter(blf, ans);
-    } else if (isHttps(dnsPacket)) {
-        const ans = getTargetName(dnsPacket);
-        return newAnswerCacheFilter(blf, ans);
+function newCacheFilter(blf, domains) {
+    const cf = {};
+    if (emptyArray(domains)) return cf;
+    for (const d of domains){
+        cf[d] = objOf(blf.getDomainInfo(d).searchResult);
     }
-    return {
-    };
-}
-function newAnswerCacheFilter(blf, ans) {
-    const f = {
-    };
-    for (const name of ans){
-        f[name] = objOf(blf.getDomainInfo(name).searchResult);
-    }
-    return f;
+    return cf;
 }
 function isCacheable(dnsPacket) {
     if (!rcodeNoError(dnsPacket)) return false;
@@ -5611,13 +5722,13 @@ function determineCacheExpiry(dnsPacket) {
     return expiry;
 }
 function makeCacheMetadata(dnsPacket, blf) {
-    const af = generateAnswerFilter(blf, dnsPacket);
-    const qf = generateQuestionFilter(blf, dnsPacket);
+    const domains = extractDomains(dnsPacket);
+    const cf = newCacheFilter(blf, domains);
     const ttl = determineCacheExpiry(dnsPacket);
     return {
         ttlEndTime: ttl,
         bodyUsed: hasAnswers(dnsPacket),
-        cacheFilter: concatObj(af, qf)
+        cacheFilter: cf
     };
 }
 function createCacheInput(dnsPacket, blf) {
@@ -5635,43 +5746,46 @@ function updateTtl(decodedDnsPacket, end) {
 }
 function cacheKey(packet) {
     if (!hasSingleQuestion(packet)) return null;
-    const name = packet.questions[0].name.trim().toLowerCase();
+    const name10 = normalizeName(packet.questions[0].name);
     const type = packet.questions[0].type;
-    return name + ":" + type;
+    return name10 + ":" + type;
 }
 class DNSResponseBlock {
     constructor(){
         this.log = log.withTags("DnsResponseBlock");
     }
     async RethinkModule(param) {
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = false;
+        let response = emptyResponse();
         try {
             response.data = this.performBlocking(param.userBlocklistInfo, param.responseDecodedDnsPacket, param.blocklistFilter, false);
             this.putCache(param.rxid, param.dnsCache, param.request.url, param.blocklistFilter, param.responseDecodedDnsPacket, param.responseBodyBuffer, param.event);
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "DNSResponseBlock RethinkModule";
             this.log.e(param.rxid, "main", e);
+            response = errResponse("DnsResponseBlock", e);
         }
         return response;
     }
-    performBlocking(blockInfo, dnsPacket, blf, cf) {
-        if (!hasBlockstamp(blockInfo)) {
+    performBlocking(rxid, blockInfo, dnsPacket, blf, cf) {
+        if (!cf && !blf) {
+            this.log.w(rxid, "no cf and blf");
             return false;
-        } else if (isCname(dnsPacket)) {
-            return doCnameBlock(dnsPacket, blf, blockInfo, cf);
-        } else if (isHttps(dnsPacket)) {
-            return doHttpsBlock(dnsPacket, blf, blockInfo, cf);
         }
-        return false;
+        if (!hasBlockstamp(blockInfo)) {
+            this.log.d(rxid, "no user-set blockstamp");
+            return false;
+        }
+        if (emptyBuf(dnsPacket)) {
+            this.log.d(rxid, "no dns-packet ans");
+            return false;
+        }
+        if (!isCname(dnsPacket) && !isHttps(dnsPacket)) {
+            this.log.d(rxid, "ans not cloaked with cname/https/svcb");
+            return false;
+        }
+        return doResponseBlock(dnsPacket, blf, blockInfo, cf);
     }
     putCache(rxid, cache, url, blf, dnsPacket, buf, event) {
+        if (emptyBuf(dnsPacket)) return;
         if (!isCacheable(dnsPacket)) return;
         const k = cacheKey(dnsPacket);
         if (!k) return;
@@ -5680,28 +5794,37 @@ class DNSResponseBlock {
         cache.put(k, v, url, buf, event);
     }
 }
+function updateQueryId(decodedDnsPacket, queryId) {
+    if (queryId === decodedDnsPacket.id) return false;
+    decodedDnsPacket.id = queryId;
+    return true;
+}
+function isValueValid(v) {
+    if (emptyObj(v)) return false;
+    return hasMetadata(v.metaData);
+}
+function hasMetadata(m) {
+    return !emptyObj(m);
+}
+function hasAnswer(v) {
+    if (!hasMetadata(v.metaData)) return false;
+    return isAnswerFresh(v.metaData);
+}
 class DNSCacheResponse {
     constructor(){
         this.log = log.withTags("DnsCacheResponse");
     }
     async RethinkModule(param) {
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = {
-        };
+        let response = emptyResponse();
+        if (!param.isDnsMsg) {
+            this.log.w(param.rxid, "not a dns-msg, nowt to resolve");
+            return response;
+        }
         try {
-            if (!param.isDnsMsg) {
-                return response;
-            }
             response.data = await this.resolveFromCache(param);
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "DNSAggCache RethinkModule";
             this.log.e(param.rxid, "main", e);
+            response = errResponse("DnsCacheHandler", e);
         }
         return response;
     }
@@ -5714,13 +5837,16 @@ class DNSCacheResponse {
         return await this.makeCacheResponse(param.rxid, cacheResponse, param.userBlocklistInfo, param.requestDecodedDnsPacket, param.dnsQuestionBlock, param.dnsResponseBlock);
     }
     async makeCacheResponse(rxid, cr, blockInfo, reqDnsPacket, qb, rb) {
-        const qresponse = blockIfNeeded(qb, reqDnsPacket, cr.metaData.cacheFilter, blockInfo);
+        const qresponse = blockIfNeeded(rxid, qb, reqDnsPacket, cr.metaData.cacheFilter, blockInfo);
         this.log.d(rxid, blockInfo, "question block?", qresponse);
         if (qresponse && qresponse.isBlocked) {
             return qresponse;
         }
-        const aresponse = blockIfNeeded(rb, cr.dnsPacket, cr.metaData.cacheFilter, blockInfo);
-        this.log.d(rxid, blockInfo, "answer block?", aresponse);
+        if (!hasAnswer(cr)) {
+            return false;
+        }
+        const aresponse = blockIfNeeded(rxid, rb, cr.dnsPacket, cr.metaData.cacheFilter, blockInfo);
+        this.log.d(rxid, "answer block?", aresponse);
         if (aresponse && aresponse.isBlocked) {
             return aresponse;
         }
@@ -5733,35 +5859,23 @@ function putCache(cache, url, blf, dnsPacket, buf, event) {
     const value = createCacheInput(dnsPacket, blf);
     cache.put(key, value, url, buf, event);
 }
-function updateQueryId(decodedDnsPacket, queryId) {
-    if (queryId === decodedDnsPacket.id) return false;
-    decodedDnsPacket.id = queryId;
-    return true;
+function isAnswerFresh(m) {
+    return m.bodyUsed && m.ttlEndTime > 0 && Date.now() <= m.ttlEndTime;
 }
-function doHttpsBlock(dnsPacket, blf, blockInfo, cf) {
-    const tn = getTargetName(dnsPacket.answers);
-    if (!tn) return false;
-    return doBlock(blf, blockInfo, tn, cf);
-}
-function doCnameBlock(dnsPacket, blf, blockInfo, cf) {
-    const cn = getCname(dnsPacket.answers);
-    let response = false;
-    for (const n of cn){
-        response = doBlock(blf, blockInfo, n, cf);
-        if (response.isBlocked) break;
+function doResponseBlock(dnsPacket, blf, blockInfo, cf) {
+    const names = extractDomains(dnsPacket);
+    let r = false;
+    for (const n of names){
+        r = doBlock(blf, blockInfo, n, cf);
+        if (r.isBlocked) break;
     }
-    return response;
+    return r;
 }
-function hasBlockstamp(blockInfo) {
-    return !emptyString(blockInfo.userBlocklistFlagUint);
-}
-function blockIfNeeded(blocker, dnsPacket, cf, blockInfo) {
-    return blocker.performBlocking(blockInfo, dnsPacket, false, cf);
+function blockIfNeeded(rxid, blocker, dnsPacket, cf, blockInfo) {
+    return blocker.performBlocking(rxid, blockInfo, dnsPacket, false, cf);
 }
 function modifyCacheResponse(cr, qid) {
-    if (!cr.metaData.bodyUsed) {
-        return false;
-    }
+    if (!isAnswerFresh(cr.metaData)) return false;
     updateQueryId(cr.dnsPacket, qid);
     updateTtl(cr.dnsPacket, cr.metaData.ttlEndTime);
     return {
@@ -5794,8 +5908,17 @@ class CurrentRequest {
             this.decodedDnsPacket = this.emptyDecodedDnsPacket();
         }
     }
-    dnsExceptionResponse() {
+    dnsExceptionResponse(res) {
         this.initDecodedDnsPacketIfNeeded();
+        this.stopProcessing = true;
+        this.isException = true;
+        if (emptyObj(res)) {
+            this.exceptionStack = "no-res";
+            this.exceptionFrom = "no-res";
+        } else {
+            this.exceptionStack = res.exceptionStack || "no-stack";
+            this.exceptionFrom = res.exceptionFrom || "no-origin";
+        }
         const qid = this.decodedDnsPacket.id;
         const questions = this.decodedDnsPacket.questions;
         const ex = {
@@ -5826,8 +5949,7 @@ class CurrentRequest {
             this.decodedDnsPacket.flags = 384;
             this.decodedDnsPacket.flag_qr = true;
             this.decodedDnsPacket.answers = [];
-            this.decodedDnsPacket.answers[0] = {
-            };
+            this.decodedDnsPacket.answers[0] = {};
             this.decodedDnsPacket.answers[0].name = this.decodedDnsPacket.questions[0].name;
             this.decodedDnsPacket.answers[0].type = this.decodedDnsPacket.questions[0].type;
             this.decodedDnsPacket.answers[0].ttl = 300;
@@ -5839,22 +5961,21 @@ class CurrentRequest {
             } else if (this.decodedDnsPacket.questions[0].type === "AAAA") {
                 this.decodedDnsPacket.answers[0].data = "::";
             } else if (this.decodedDnsPacket.questions[0].type === "HTTPS" || this.decodedDnsPacket.questions[0].type === "SVCB") {
-                this.decodedDnsPacket.answers[0].data = {
-                };
+                this.decodedDnsPacket.answers[0].data = {};
                 this.decodedDnsPacket.answers[0].data.svcPriority = 0;
                 this.decodedDnsPacket.answers[0].data.targetName = ".";
-                this.decodedDnsPacket.answers[0].data.svcParams = {
-                };
+                this.decodedDnsPacket.answers[0].data.svcParams = {};
             }
             this.decodedDnsPacket.authorities = [];
             this.httpResponse = new Response(encode3(this.decodedDnsPacket), {
                 headers: this.headers()
             });
         } catch (e) {
-            this.log.e(JSON.stringify(this.decodedDnsPacket));
+            this.log.e("dnsBlock", JSON.stringify(this.decodedDnsPacket), e);
             this.isException = true;
             this.exceptionStack = e.stack;
             this.exceptionFrom = "CurrentRequest dnsBlockResponse";
+            this.httpResponse = respond503();
         }
     }
     headers() {
@@ -5872,11 +5993,10 @@ class CurrentRequest {
             "x-nile-add": json
         };
     }
-    setCorsHeaders() {
-        if (this.httpResponse.ok) {
-            for (const [name, value] of Object.entries(corsHeaders())){
-                this.httpResponse.headers.set(name, value);
-            }
+    setCorsHeadersIfNeeded() {
+        if (emptyObj(this.httpResponse) || !this.httpResponse.ok) return;
+        for (const [name11, value] of Object.entries(corsHeaders())){
+            this.httpResponse.headers.set(name11, value);
         }
     }
 }
@@ -5899,8 +6019,7 @@ function chr16(ord) {
 function chrm(ord, b64) {
     return b64 ? BASE64[ord] : String.fromCharCode(ord);
 }
-const ORD = {
-};
+const ORD = {};
 for(let i = 0; i < BASE64.length; i++){
     ORD[BASE64[i]] = i;
 }
@@ -6185,10 +6304,8 @@ function Tags(flags) {
 }
 Tags.prototype = {
     init: function(flags) {
-        this.flags = {
-        };
-        this.rflags = {
-        };
+        this.flags = {};
+        this.rflags = {};
         this.fsize = 0;
     },
     setupFlags: function(flags) {
@@ -6508,8 +6625,7 @@ function customTagToFlag(fl, blocklistFileTag) {
 }
 function createBlocklistFilter(tdbuf, rdbuf, blocklistFileTag, blocklistBasicConfig) {
     initialize();
-    const tag = {
-    };
+    const tag = {};
     const fl = [];
     for(const fileuname in blocklistFileTag){
         if (!blocklistFileTag.hasOwnProperty(fileuname)) continue;
@@ -6544,23 +6660,23 @@ class Clock {
         this.maxcount = this.bound(maxlife, minlives, maxlives);
         this.totalhands = Math.max(minslots, Math.round(this.capacity / slotsperhand));
         this.hands = new Array(this.totalhands);
-        for(let i25 = 0; i25 < this.totalhands; i25++)this.hands[i25] = i25;
+        for(let i28 = 0; i28 < this.totalhands; i28++)this.hands[i28] = i28;
     }
-    next(i26) {
-        const n = i26 + this.totalhands;
+    next(i29) {
+        const n = i29 + this.totalhands;
         return (this.capacity + n) % this.capacity;
     }
-    cur(i27) {
-        return (this.capacity + i27) % this.capacity;
+    cur(i30) {
+        return (this.capacity + i30) % this.capacity;
     }
-    prev(i28) {
-        const p = i28 - this.totalhands;
+    prev(i31) {
+        const p = i31 - this.totalhands;
         return (this.capacity + p) % this.capacity;
     }
-    bound(i29, min, max) {
-        i29 = i29 < min ? min : i29;
-        i29 = i29 > max ? max - 1 : i29;
-        return i29;
+    bound(i32, min, max) {
+        i32 = i32 < min ? min : i32;
+        i32 = i32 > max ? max - 1 : i32;
+        return i32;
     }
     head(n) {
         n = this.bound(n, 0, this.totalhands);
@@ -6636,8 +6752,7 @@ class Clock {
         return Math.floor(Math.random() * (max - 0)) + 0;
     }
 }
-function logd() {
-}
+function logd() {}
 class LfuCache {
     constructor(id, capacity){
         this.id = id;
@@ -6664,9 +6779,9 @@ class LfuCache {
 }
 class UserCache {
     constructor(size){
-        const name = "UserCache";
-        this.localCache = new LfuCache(name, size);
-        this.log = log.withTags(name);
+        const name12 = "UserCache";
+        this.localCache = new LfuCache(name12, size);
+        this.log = log.withTags(name12);
     }
     get(key) {
         return this.localCache.Get(key);
@@ -6681,9 +6796,9 @@ class UserCache {
 }
 class DomainNameCache {
     constructor(size){
-        const name = "DomainNameCache";
-        this.localCache = new LfuCache(name, size);
-        this.log = log.withTags(name);
+        const name13 = "DomainNameCache";
+        this.localCache = new LfuCache(name13, size);
+        this.log = log.withTags(name13);
     }
     get(key) {
         return this.localCache.Get(key);
@@ -6754,7 +6869,7 @@ class DnsCache {
     fromLocalCache(key) {
         if (!key) return false;
         const v = this.localCache.Get(key);
-        return this.isValid(v) ? v : false;
+        return isValueValid(v) ? v : false;
     }
     async fromHttpCacheApi(key) {
         if (!key) return false;
@@ -6767,31 +6882,14 @@ class DnsCache {
         if (!k || !v) return;
         this.cacheApi.put(k, v);
     }
-    isValid(v) {
-        if (!v) return false;
-        const hasMd = this.hasMetadata(v.metaData) && !this.hasAnswer(v.metaData);
-        if (hasMd) return true;
-        const hasAns = this.isAnswerFresh(v.metaData);
-        return hasAns;
-    }
-    isAnswerFresh(m) {
-        return this.hasAnswer(m) && m.ttlEndTime > 0 && Date.now() <= m.ttlEndTime;
-    }
-    hasAnswer(m) {
-        return this.hasMetadata(m) && m.bodyUsed;
-    }
-    hasMetadata(m) {
-        return !!m;
-    }
     async parseHttpCacheApiResponse(response) {
         if (!response) return false;
         const metaData = JSON.parse(response.headers.get("x-rethink-metadata"));
         this.log.d("httpCache response metadata", metaData);
-        if (!this.isMetadataFresh(metaData)) {
+        if (!hasMetadata(metaData)) {
             return false;
         }
-        const p = metaData.bodyUsed ? decode3(await response.arrayBuffer()) : {
-        };
+        const p = isAnswerFresh(metaData) ? decode3(await response.arrayBuffer()) : {};
         const m = metaData;
         return {
             dnsPacket: p,
@@ -6811,32 +6909,6 @@ function makeHttpCacheApiValue(buf, metaData) {
 function makeHttpCacheApiKey(key, url) {
     return new URL(new URL(url).origin + "/" + env.latestTimestamp + "/" + key);
 }
-const ALPHA32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-function readChar(chr) {
-    chr = chr.toUpperCase();
-    const idx = ALPHA32.indexOf(chr);
-    if (idx === -1) {
-        throw new Error("invalid b32 character: " + chr);
-    }
-    return idx;
-}
-function rbase32(input) {
-    input = input.replace(/=+$/, "");
-    const length = input.length;
-    let bits = 0;
-    let value = 0;
-    let index = 0;
-    let output = new Uint8Array(length * 5 / 8 | 0);
-    for(var i30 = 0; i30 < length; i30++){
-        value = value << 5 | readChar(input[i30]);
-        bits += 5;
-        if (bits >= 8) {
-            output[index++] = value >>> bits - 8 & 255;
-            bits -= 8;
-        }
-    }
-    return output;
-}
 class BlocklistFilter {
     constructor(){
         this.t = null;
@@ -6844,162 +6916,57 @@ class BlocklistFilter {
         this.blocklistBasicConfig = null;
         this.blocklistFileTag = null;
         this.domainNameCache = null;
-        this.wildCardUint = new Uint16Array([
-            64544,
-            18431,
-            8191,
-            65535,
-            64640,
-            1,
-            128,
-            16320, 
-        ]);
+        this.enc = new TextEncoder();
     }
     loadFilter(t, ft, blocklistBasicConfig, blocklistFileTag) {
         this.t = t;
         this.ft = ft;
         this.blocklistBasicConfig = blocklistBasicConfig;
         this.blocklistFileTag = blocklistFileTag;
-        this.domainNameCache = new DomainNameCache(20000);
+        this.domainNameCache = new DomainNameCache(cacheSize());
     }
     getDomainInfo(domainName) {
-        domainName = domainName.trim().toLowerCase();
+        domainName = normalizeName(domainName);
         let domainNameInfo = this.domainNameCache.get(domainName);
         if (!domainNameInfo) {
             domainNameInfo = {
+                searchResult: this.hadDomainName(domainName)
             };
-            domainNameInfo.searchResult = this.hadDomainName(domainName);
             this.domainNameCache.put(domainName, domainNameInfo);
         }
         return domainNameInfo;
     }
-    hadDomainName(domainName) {
-        const enc = new TextEncoder();
-        return this.ft.lookup(enc.encode(domainName).reverse());
+    hadDomainName(n) {
+        return this.ft.lookup(this.reverseUtf8(n));
+    }
+    reverseUtf8(s) {
+        return this.enc.encode(s).reverse();
     }
     getTag(uintFlag) {
         return this.t.flagsToTag(uintFlag);
-    }
-    unstamp(flag) {
-        return toUint(flag);
     }
     customTagToFlag(tagList) {
         return customTagToFlag(tagList, this.blocklistFileTag);
     }
     getB64FlagFromTag(tagList, flagVersion) {
-        if (flagVersion === "0") {
-            return encodeURIComponent(Buffer1.from(customTagToFlag(tagList, this.blocklistFileTag)).toString("base64"));
-        } else if (flagVersion === "1") {
-            return "1:" + encodeURI(btoa(encodeToBinary(customTagToFlag(tagList, this.blocklistFileTag))).replace(/\//g, "_").replace(/\+/g, "-"));
-        }
+        const uintFlag = this.customTagToFlag(tagList);
+        return getB64Flag(uintFlag, flagVersion);
     }
-}
-function encodeToBinary(s) {
-    const codeUnits = new Uint16Array(s.length);
-    for(let i31 = 0; i31 < codeUnits.length; i31++){
-        codeUnits[i31] = s.charCodeAt(i31);
-    }
-    return String.fromCharCode(...new Uint8Array(codeUnits.buffer));
-}
-const b64delim = ":";
-const b32delim = "+";
-function isB32(s) {
-    return s.indexOf(b32delim) > 0;
-}
-function version(s) {
-    if (s && s.length > 1) return s[0];
-    else return "0";
-}
-function toUint(flag) {
-    try {
-        const response = {
-        };
-        response.userBlocklistFlagUint = "";
-        response.flagVersion = "0";
-        flag = flag ? flag.trim() : "";
-        if (flag.length <= 0) {
-            return response;
-        }
-        const isFlagB32 = isB32(flag);
-        const s = flag.split(isFlagB32 ? b32delim : b64delim);
-        let convertor = (x)=>""
-        ;
-        let f = "";
-        const v = version(s);
-        if (v === "0") {
-            convertor = Base64ToUint;
-            f = s[0];
-        } else if (v === "1") {
-            convertor = isFlagB32 ? Base32ToUintV1 : Base64ToUintV1;
-            f = s[1];
-        } else {
-            throw new Error("unknown blocklist stamp version in " + s);
-        }
-        response.flagVersion = v;
-        response.userBlocklistFlagUint = convertor(f) || "";
-        return response;
-    } catch (e) {
-        throw e;
-    }
-}
-function Base64ToUint(b64Flag) {
-    const buff = Buffer1.from(decodeURIComponent(b64Flag), "base64");
-    const str = buff.toString("utf-8");
-    const uint = [];
-    for(let i32 = 0; i32 < str.length; i32++){
-        uint[i32] = str.charCodeAt(i32);
-    }
-    return uint;
-}
-function Base64ToUintV1(b64Flag) {
-    let str = decodeURI(b64Flag);
-    str = decodeFromBinary(atob(str.replace(/_/g, "/").replace(/-/g, "+")));
-    const uint = [];
-    for(let i33 = 0; i33 < str.length; i33++){
-        uint[i33] = str.charCodeAt(i33);
-    }
-    return uint;
-}
-function Base32ToUintV1(flag) {
-    let str = decodeURI(flag);
-    str = decodeFromBinaryArray(rbase32(str));
-    const uint = [];
-    for(let i34 = 0; i34 < str.length; i34++){
-        uint[i34] = str.charCodeAt(i34);
-    }
-    return uint;
-}
-function decodeFromBinary(b, u8) {
-    if (u8) return String.fromCharCode(...new Uint16Array(b.buffer));
-    const bytes = new Uint8Array(b.length);
-    for(let i35 = 0; i35 < bytes.length; i35++){
-        bytes[i35] = b.charCodeAt(i35);
-    }
-    return String.fromCharCode(...new Uint16Array(bytes.buffer));
-}
-function decodeFromBinaryArray(b) {
-    return decodeFromBinary(b, true);
 }
 class BlocklistWrapper {
     constructor(){
         this.blocklistFilter = new BlocklistFilter();
-        this.startTime;
         this.td = null;
         this.rd = null;
         this.ft = null;
+        this.startTime;
         this.isBlocklistUnderConstruction = false;
         this.exceptionFrom = "";
         this.exceptionStack = "";
         this.log = log.withTags("BlocklistWrapper");
     }
     async RethinkModule(param) {
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = {
-        };
+        let response = emptyResponse();
         if (this.isBlocklistFilterSetup()) {
             response.data.blocklistFilter = this.blocklistFilter;
             return response;
@@ -7022,14 +6989,12 @@ class BlocklistWrapper {
                     totalWaitms += waitms;
                 }
                 response.isException = true;
-                response.exceptionStack = this.exceptionStack || "blocklist filter not ready";
-                response.exceptionFrom = this.exceptionFrom || "blocklistWrapper.js RethinkModule";
+                response.exceptionStack = this.exceptionStack || "blocklist-filter timeout";
+                response.exceptionFrom = this.exceptionFrom || "blocklistWrapper.js";
             }
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "blocklistWrapper.js RethinkModule";
-            log.e(param.rxid, "RethinkModule", e);
+            this.log.e(param.rxid, "main", e);
+            response = errResponse("blocklistWrapper", e);
         }
         return response;
     }
@@ -7045,33 +7010,24 @@ class BlocklistWrapper {
     async initBlocklistConstruction(rxid, when, blocklistUrl, latestTimestamp, tdNodecount, tdParts) {
         this.isBlocklistUnderConstruction = true;
         this.startTime = when;
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = {
-        };
+        let response = emptyResponse();
         try {
             const bl = await this.downloadBuildBlocklist(rxid, blocklistUrl, latestTimestamp, tdNodecount, tdParts);
             this.blocklistFilter.loadFilter(bl.t, bl.ft, bl.blocklistBasicConfig, bl.blocklistFileTag);
             log.d(rxid, "loaded blocklist-filter");
             response.data.blocklistFilter = this.blocklistFilter;
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "blocklistWrapper.js initBlocklistConstruction";
+            this.log.e(rxid, e);
+            response = errResponse("initBlocklistConstruction", e);
             this.exceptionFrom = response.exceptionFrom;
             this.exceptionStack = response.exceptionStack;
-            log.e(rxid, e);
         }
         this.isBlocklistUnderConstruction = false;
         return response;
     }
     async downloadBuildBlocklist(rxid, blocklistUrl, latestTimestamp, tdNodecount, tdParts) {
         !tdNodecount && log.e(rxid, "tdNodecount zero or missing!");
-        const resp = {
-        };
+        const resp = {};
         const baseurl = blocklistUrl + latestTimestamp;
         const blocklistBasicConfig = {
             nodecount: tdNodecount || -1,
@@ -7101,25 +7057,24 @@ async function fileFetch(url, typ) {
     if (typ !== "buffer" && typ !== "json") {
         throw new Error("Unknown conversion type at fileFetch");
     }
-    log.d("Start Downloading : " + url);
+    log.d("downloading", url);
     const res = await fetch(url, {
         cf: {
             cacheTtl: 1209600
         }
     });
-    if (res.status === 200) {
-        if (typ === "buffer") {
-            return await res.arrayBuffer();
-        } else if (typ === "json") {
-            return await res.json();
-        }
-    } else {
+    if (!res.ok) {
         log.e(url, res);
         throw new Error(JSON.stringify([
             url,
             res,
             "fileFetch fail"
         ]));
+    }
+    if (typ === "buffer") {
+        return await res.arrayBuffer();
+    } else if (typ === "json") {
+        return await res.json();
     }
 }
 const sleep = (ms)=>{
@@ -7128,13 +7083,13 @@ const sleep = (ms)=>{
     });
 };
 async function makeTd(baseurl, n) {
-    log.d("Make Td Starts : Tdparts -> " + n);
+    log.d("makeTd from tdParts", n);
     if (n <= -1) {
         return fileFetch(baseurl + "/td.txt", "buffer");
     }
     const tdpromises = [];
-    for(let i36 = 0; i36 <= n; i36++){
-        const f = baseurl + "/td" + i36.toLocaleString("en-US", {
+    for(let i33 = 0; i33 <= n; i33++){
+        const f = baseurl + "/td" + i33.toLocaleString("en-US", {
             minimumIntegerDigits: 2,
             useGrouping: false
         }) + ".txt";
@@ -7165,23 +7120,10 @@ class CommandControl {
     }
     async RethinkModule(param) {
         this.latestTimestamp = param.latestTimestamp;
-        let response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = {
-        };
-        response.data.stopProcessing = false;
-        if (param.request.method === "GET") {
-            response = this.commandOperation(param.request.url, param.blocklistFilter, param.isDnsMsg);
-        } else if (param.request.method !== "POST") {
-            response.data.httpResponse = new Response(null, {
-                status: 405,
-                statusText: "Method Not Allowed"
-            });
+        if (isGetRequest(param.request)) {
+            return this.commandOperation(param.request.url, param.blocklistFilter, param.isDnsMsg);
         }
-        return response;
+        return emptyResponse();
     }
     isConfigureCmd(s) {
         return s === "configure" || s === "config";
@@ -7201,15 +7143,7 @@ class CommandControl {
         return d.length > 1 ? d[0] : emptyFlag;
     }
     commandOperation(url, blocklistFilter, isDnsMsg1) {
-        const response = {
-            isException: false,
-            exceptionStack: "",
-            exceptionFrom: "",
-            data: {
-                httpResponse: null,
-                stopProcessing: true
-            }
-        };
+        let response = emptyResponse();
         try {
             const reqUrl = new URL(url);
             const queryString = reqUrl.searchParams;
@@ -7218,6 +7152,8 @@ class CommandControl {
             if (isDnsCmd) {
                 response.data.stopProcessing = false;
                 return response;
+            } else {
+                response.data.stopProcessing = true;
             }
             const command = pathSplit[1];
             const b64UserFlag = this.userFlag(reqUrl, isDnsCmd);
@@ -7232,22 +7168,17 @@ class CommandControl {
             } else if (command === "config" || command === "configure" || !isDnsCmd) {
                 response.data.httpResponse = configRedirect(b64UserFlag, reqUrl.origin, this.latestTimestamp, !isDnsCmd);
             } else {
-                response.data.httpResponse = new Response(null, {
-                    status: 400,
-                    statusText: "Bad Request"
-                });
+                response.data.httpResponse = respond400();
             }
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "CommandControl commandOperation";
-            response.data.httpResponse = jsonResponse(response.exceptionStack);
+            response = errResponse("cc:op", e);
+            response.data.httpResponse = jsonResponse(e.stack);
         }
         return response;
     }
 }
 function isRethinkDns(hostname) {
-    return hostname.indexOf("rethinkdns") >= 0 || hostname.indexOf("bravedns") >= 0;
+    return hostname.indexOf("rethinkdns") >= 0;
 }
 function configRedirect(userFlag, origin, timestamp, highlight) {
     const u = "https://rethinkdns.com/configure";
@@ -7259,159 +7190,116 @@ function configRedirect(userFlag, origin, timestamp, highlight) {
 }
 function domainNameToList(queryString, blocklistFilter, latestTimestamp) {
     const domainName = queryString.get("dn") || "";
-    const returndata = {
-    };
-    returndata.domainName = domainName;
-    returndata.version = latestTimestamp;
-    returndata.list = {
+    const r = {
+        domainName: domainName,
+        version: latestTimestamp,
+        list: {}
     };
     const searchResult = blocklistFilter.hadDomainName(domainName);
-    if (searchResult) {
-        let list;
-        let listDetail = {
-        };
-        for (const entry of searchResult){
-            list = blocklistFilter.getTag(entry[1]);
-            listDetail = {
-            };
-            for (const listValue of list){
-                listDetail[listValue] = blocklistFilter.blocklistFileTag[listValue];
-            }
-            returndata.list[entry[0]] = listDetail;
-        }
-    } else {
-        returndata.list = false;
+    if (!searchResult) {
+        r.list = false;
+        return jsonResponse(r);
     }
-    return jsonResponse(returndata);
+    for (const entry of searchResult){
+        const list = blocklistFilter.getTag(entry[1]);
+        const listDetail = {};
+        for (const listValue of list){
+            listDetail[listValue] = blocklistFilter.blocklistFileTag[listValue];
+        }
+        r.list[entry[0]] = listDetail;
+    }
+    return jsonResponse(r);
 }
 function domainNameToUint(queryString, blocklistFilter) {
     const domainName = queryString.get("dn") || "";
-    const returndata = {
-    };
-    returndata.domainName = domainName;
-    returndata.list = {
+    const r = {
+        domainName: domainName,
+        list: {}
     };
     const searchResult = blocklistFilter.hadDomainName(domainName);
-    if (searchResult) {
-        for (const entry of searchResult){
-            returndata.list[entry[0]] = entry[1];
-        }
-    } else {
-        returndata.list = false;
+    if (!searchResult) {
+        r.list = false;
+        return jsonResponse(r);
     }
-    return jsonResponse(returndata);
+    for (const entry of searchResult){
+        r.list[entry[0]] = entry[1];
+    }
+    return jsonResponse(r);
 }
 function listToB64(queryString, blocklistFilter) {
     const list = queryString.get("list") || [];
     const flagVersion = queryString.get("flagversion") || "0";
-    const returndata = {
+    const tags = list.split(",");
+    const r = {
+        command: "List To B64String",
+        inputList: list,
+        flagVersion: flagVersion,
+        b64String: blocklistFilter.getB64FlagFromTag(tags, flagVersion)
     };
-    returndata.command = "List To B64String";
-    returndata.inputList = list;
-    returndata.flagVersion = flagVersion;
-    returndata.b64String = blocklistFilter.getB64FlagFromTag(list.split(","), flagVersion);
-    return jsonResponse(returndata);
+    return jsonResponse(r);
 }
 function b64ToList(queryString, blocklistFilter) {
     const b64 = queryString.get("b64") || "";
-    const returndata = {
+    const r = {
+        command: "Base64 To List",
+        inputB64: b64
     };
-    returndata.command = "Base64 To List";
-    returndata.inputB64 = b64;
-    const response = blocklistFilter.unstamp(b64);
-    if (response.userBlocklistFlagUint.length > 0) {
-        returndata.list = blocklistFilter.getTag(response.userBlocklistFlagUint);
-        returndata.listDetail = {
-        };
-        for (const listValue of returndata.list){
-            returndata.listDetail[listValue] = blocklistFilter.blocklistFileTag[listValue];
-        }
-    } else {
-        returndata.list = "Invalid B64 String";
+    const stamp = unstamp(b64);
+    if (stamp.userBlocklistFlagUint.length <= 0) {
+        r.list = "Invalid B64 String";
+        return jsonResponse(r);
     }
-    return jsonResponse(returndata);
+    r.list = blocklistFilter.getTag(stamp.userBlocklistFlagUint);
+    r.listDetail = {};
+    for (const listValue of r.list){
+        r.listDetail[listValue] = blocklistFilter.blocklistFileTag[listValue];
+    }
+    return jsonResponse(r);
 }
 function jsonResponse(obj) {
     return new Response(JSON.stringify(obj), {
         headers: jsonHeaders()
     });
 }
+const cacheSize1 = 10000;
 class UserOperation {
     constructor(){
-        this.userConfigCache = new UserCache(1000);
-        this.blocklistFilter = new BlocklistFilter();
+        this.userConfigCache = new UserCache(cacheSize1);
         this.log = log.withTags("UserOp");
     }
     async RethinkModule(param) {
         return this.loadUser(param);
     }
     loadUser(param) {
-        const response = {
-        };
-        response.isException = false;
-        response.exceptionStack = "";
-        response.exceptionFrom = "";
-        response.data = {
-        };
-        response.data.userBlocklistInfo = {
-        };
-        response.data.userBlocklistInfo.dnsResolverUrl = "";
+        let response = emptyResponse();
         if (!param.isDnsMsg) {
+            this.log.w(param.rxid, "not a dns-msg, ignore");
             return response;
         }
         try {
-            const userBlocklistInfo = {
-            };
-            let blocklistFlag = getBlocklistFlag(param.request.url);
+            const blocklistFlag = blockstampFromUrl(param.request.url);
             let currentUser = this.userConfigCache.get(blocklistFlag);
             if (emptyObj(currentUser)) {
+                const r = unstamp(blocklistFlag);
+                const serviceListUint = flagIntersection(r.userBlocklistFlagUint, wildcards());
                 currentUser = {
+                    userBlocklistFlagUint: r.userBlocklistFlagUint,
+                    flagVersion: r.flagVersion,
+                    userServiceListUint: serviceListUint
                 };
-                currentUser.userBlocklistFlagUint = "";
-                currentUser.flagVersion = 0;
-                currentUser.userServiceListUint = false;
-                const response = this.blocklistFilter.unstamp(blocklistFlag);
-                currentUser.userBlocklistFlagUint = response.userBlocklistFlagUint;
-                currentUser.flagVersion = response.flagVersion;
-                if (!emptyString(currentUser.userBlocklistFlagUint)) {
-                    currentUser.userServiceListUint = flagIntersection(currentUser.userBlocklistFlagUint, this.blocklistFilter.wildCardUint);
-                } else {
-                    blocklistFlag = "";
-                }
-                userBlocklistInfo.from = "Generated";
+                this.log.d(param.rxid, "new cfg cache kv", blocklistFlag, currentUser);
                 this.userConfigCache.put(blocklistFlag, currentUser);
-            } else {
-                userBlocklistInfo.from = "Cache";
             }
-            userBlocklistInfo.userBlocklistFlagUint = currentUser.userBlocklistFlagUint;
-            userBlocklistInfo.flagVersion = currentUser.flagVersion;
-            userBlocklistInfo.userServiceListUint = currentUser.userServiceListUint;
-            response.data.userBlocklistInfo = userBlocklistInfo;
+            response.data.userBlocklistInfo = currentUser;
             response.data.dnsResolverUrl = param.dnsResolverUrl;
         } catch (e) {
-            response.isException = true;
-            response.exceptionStack = e.stack;
-            response.exceptionFrom = "UserOperation loadUser";
             this.log.e(param.rxid, "loadUser", e);
+            response = errResponse("UserOp:loadUser", e);
         }
         return response;
     }
 }
-function getBlocklistFlag(url) {
-    let blocklistFlag = "";
-    const reqUrl = new URL(url);
-    const tmpsplit = reqUrl.pathname.split("/");
-    if (tmpsplit.length > 1) {
-        if (tmpsplit[1].toLowerCase() === "dns-query") {
-            blocklistFlag = tmpsplit[2] || "";
-        } else {
-            blocklistFlag = tmpsplit[1] || "";
-        }
-    }
-    return blocklistFlag;
-}
-const services = {
-};
+const services = {};
 ((main)=>{
     sub("ready", systemReady);
 })();
@@ -7446,11 +7334,12 @@ class RethinkPlugin {
         this.log = log.withTags("RethinkPlugin");
         this.plugin = [];
         this.registerPlugin("userOperation", services.userOperation, [
+            "rxid",
             "dnsResolverUrl",
             "request",
             "isDnsMsg"
         ], this.userOperationCallBack, false);
-        this.registerPlugin("AggressiveCaching", services.dnsCacheHandler, [
+        this.registerPlugin("DnsCacheHandler", services.dnsCacheHandler, [
             "rxid",
             "userBlocklistInfo",
             "request",
@@ -7459,7 +7348,7 @@ class RethinkPlugin {
             "dnsCache",
             "dnsQuestionBlock",
             "dnsResponseBlock", 
-        ], this.dnsAggCacheCallBack, false);
+        ], this.dnsCacheCallBack, false);
         this.registerPlugin("blocklistFilter", services.blocklistWrapper, [
             "rxid",
             "blocklistUrl",
@@ -7538,149 +7427,142 @@ class RethinkPlugin {
     }
     blocklistFilterCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In blocklistFilterCallBack");
-        if (response.isException) {
-            loadException(response, currentRequest);
-        } else {
-            this.registerParameter("blocklistFilter", response.data.blocklistFilter);
+        const r = response.data;
+        this.log.d(rxid, "blocklistFilter response");
+        if (response.isException || emptyObj(r) || emptyObj(r.blocklistFilter)) {
+            this.log.e(rxid, "err building blocklist-filter", response);
+            this.loadException(rxid, response, currentRequest);
+            return;
         }
+        this.registerParameter("blocklistFilter", r.blocklistFilter);
     }
     async commandControlCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In commandControlCallBack");
-        if (response.data.stopProcessing) {
-            currentRequest.httpResponse = response.data.httpResponse;
+        const r = response.data;
+        this.log.d(rxid, "commandControl response");
+        if (!emptyObj(r) && r.stopProcessing) {
+            currentRequest.httpResponse = r.httpResponse;
             currentRequest.stopProcessing = true;
         }
     }
     async userOperationCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In userOperationCallBack");
+        const r = response.data;
+        this.log.d(rxid, "userOperation response");
         if (response.isException) {
-            loadException(response, currentRequest);
+            this.log.w(rxid, "unexpected err userOp", r);
+            this.loadException(rxid, response, currentRequest);
+        } else if (!emptyObj(r)) {
+            this.registerParameter("userBlocklistInfo", r.userBlocklistInfo);
+            this.registerParameter("dnsResolverUrl", r.dnsResolverUrl);
         } else {
-            this.registerParameter("userBlocklistInfo", response.data.userBlocklistInfo);
-            this.registerParameter("dnsResolverUrl", response.data.dnsResolverUrl);
+            this.log.i(rxid, "userOp is a no-op, possibly a command control req");
         }
     }
-    dnsAggCacheCallBack(response, currentRequest) {
+    dnsCacheCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In dnsAggCacheCallBack");
+        const r = response.data;
+        this.log.d(rxid, "dnsCacheHandler response blocked?", r.isBlocked, "answer?", !emptyBuf(r.dnsBuffer));
         if (response.isException) {
-            loadException(response, currentRequest);
-        } else if (response.data && response.data.isBlocked) {
-            currentRequest.isDnsBlock = response.data.isBlocked;
-            currentRequest.blockedB64Flag = response.data.blockedB64Flag;
+            this.loadException(rxid, response, currentRequest);
+        } else if (r && r.isBlocked) {
+            currentRequest.isDnsBlock = r.isBlocked;
+            currentRequest.blockedB64Flag = r.blockedB64Flag;
             currentRequest.stopProcessing = true;
             currentRequest.dnsBlockResponse();
-        } else if (response.data && response.data.dnsBuffer) {
-            this.registerParameter("responseDecodedDnsPacket", response.data.dnsPacket);
-            currentRequest.dnsResponse(response.data.dnsBuffer);
-            currentRequest.decodedDnsPacket = response.data.dnsPacket;
+        } else if (r && r.dnsBuffer) {
+            this.registerParameter("responseDecodedDnsPacket", r.dnsPacket);
+            currentRequest.dnsResponse(r.dnsBuffer);
+            currentRequest.decodedDnsPacket = r.dnsPacket;
             currentRequest.stopProcessing = true;
+        } else {
+            this.log.d(rxid, "resolve query; no response from dnsCache");
         }
     }
     dnsQuestionBlockCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In dnsQuestionBlockCallBack");
+        const r = response.data;
+        const blocked = !emptyObj(r) && r.isBlocked;
+        this.log.d(rxid, "dnsQuestionBlock response blocked?", blocked);
         if (response.isException) {
-            loadException(response, currentRequest);
-        } else if (response.data) {
-            currentRequest.isDnsBlock = response.data.isBlocked;
-            currentRequest.blockedB64Flag = response.data.blockedB64Flag;
+            this.loadException(rxid, response, currentRequest);
+        } else if (blocked) {
+            currentRequest.isDnsBlock = r.isBlocked;
+            currentRequest.blockedB64Flag = r.blockedB64Flag;
             if (currentRequest.isDnsBlock) {
                 currentRequest.stopProcessing = true;
                 currentRequest.dnsBlockResponse();
             }
+        } else {
+            this.log.d(rxid, "all okay, no actionable res from dnsQuestionBlock");
         }
     }
     dnsResolverCallBack(response, currentRequest) {
-        this.log.d(this.parameter.get("rxid"), "In dnsResolverCallBack", JSON.stringify(response.data));
-        if (response.isException) {
-            loadException(response, currentRequest);
-        } else {
-            this.registerParameter("responseBodyBuffer", response.data.dnsBuffer);
-            this.registerParameter("responseDecodedDnsPacket", response.data.dnsPacket);
+        const rxid = this.parameter.get("rxid");
+        const r = response.data;
+        this.log.d(rxid, "dnsResolver packet");
+        if (response.isException || emptyObj(r) || emptyBuf(r.dnsBuffer)) {
+            this.log.w(rxid, "err dns resolver", response);
+            this.loadException(rxid, response, currentRequest);
+            return;
         }
+        this.registerParameter("responseBodyBuffer", r.dnsBuffer);
+        this.registerParameter("responseDecodedDnsPacket", r.dnsPacket);
     }
     dnsResponseBlockCallBack(response, currentRequest) {
         const rxid = this.parameter.get("rxid");
-        this.log.d(rxid, "In dnsResponseBlockCallBack");
+        const r = response.data;
+        this.log.d(rxid, "dnsResponseBlock");
+        currentRequest.stopProcessing = true;
         if (response.isException) {
-            loadException(response, currentRequest);
-        } else if (response.data && response.data.isBlocked) {
-            currentRequest.isDnsBlock = response.data.isBlocked;
-            currentRequest.blockedB64Flag = response.data.blockedB64Flag !== "" ? response.data.blockedB64Flag : currentRequest.blockedB64Flag;
-            currentRequest.stopProcessing = true;
+            this.loadException(rxid, response, currentRequest);
+        } else if (r && r.isBlocked) {
+            currentRequest.isDnsBlock = r.isBlocked;
+            currentRequest.blockedB64Flag = r.blockedB64Flag;
             currentRequest.dnsBlockResponse();
         } else {
             currentRequest.dnsResponse(this.parameter.get("responseBodyBuffer"));
             currentRequest.decodedDnsPacket = this.parameter.get("responseDecodedDnsPacket");
-            currentRequest.stopProcessing = true;
         }
     }
-}
-function loadException(response, currentRequest) {
-    log.e(JSON.stringify(response));
-    currentRequest.stopProcessing = true;
-    currentRequest.isException = true;
-    currentRequest.exceptionStack = response.exceptionStack;
-    currentRequest.exceptionFrom = response.exceptionFrom;
-    currentRequest.dnsExceptionResponse();
+    loadException(rxid, response, currentRequest) {
+        this.log.e(rxid, "exception", JSON.stringify(response));
+        currentRequest.dnsExceptionResponse(response);
+    }
 }
 function generateParam(parameter, list) {
-    const param = {
-    };
+    const out = {};
     for (const key of list){
-        if (parameter.has(key)) {
-            param[key] = parameter.get(key);
-        }
+        out[key] = parameter.get(key) || null;
     }
-    return param;
+    return out;
 }
 async function setRequest(parameter, currentRequest) {
     const request = parameter.get("request");
-    parameter.set("isDnsMsg", isDnsMsg(request));
-    const isDnsMsg2 = parameter.get("isDnsMsg");
-    if (!isValidRequest(isDnsMsg2, request)) {
-        setInvalidResponse(currentRequest);
-        return;
-    }
+    const isDnsMsg2 = isDnsMsg(request);
+    parameter.set("isDnsMsg", isDnsMsg2);
     if (!isDnsMsg2) {
+        if (!isGetRequest(request)) setInvalidResponse(currentRequest);
         return;
     }
-    const buf = await getBodyBuffer(request);
-    parameter.set("requestBodyBuffer", buf);
-    parameter.set("requestDecodedDnsPacket", decode3(buf));
-    currentRequest.decodedDnsPacket = parameter.get("requestDecodedDnsPacket");
+    const packet = await getBodyBuffer(request);
+    const decodedPacket = decode3(packet);
+    currentRequest.decodedDnsPacket = decodedPacket;
+    parameter.set("requestDecodedDnsPacket", decodedPacket);
+    parameter.set("requestBodyBuffer", packet);
 }
 async function getBodyBuffer(request) {
-    if (request.method.toUpperCase() === "GET") {
-        const QueryString = new URL(request.url).searchParams;
-        return base64ToArrayBuffer(decodeURI(QueryString.get("dns")).replace(/-/g, "+").replace(/_/g, "/"));
-    } else {
+    if (isPostRequest(request)) {
         return await request.arrayBuffer();
+    } else {
+        const queryString = new URL(request.url).searchParams;
+        const dnsQuery = queryString.get("dns");
+        return base64ToBytes(dnsQuery);
     }
 }
 function setInvalidResponse(currentRequest) {
-    currentRequest.httpResponse = new Response(null, {
-        status: 400,
-        statusText: "Bad Request"
-    });
+    currentRequest.httpResponse = respond405();
     currentRequest.stopProcessing = true;
-}
-function isValidRequest(isDnsMsg3, req) {
-    if (!isDnsMsg3 && req.method.toUpperCase() === "POST") return false;
-    return true;
-}
-function base64ToArrayBuffer(base64) {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for(let i37 = 0; i37 < len; i37++){
-        bytes[i37] = binaryString.charCodeAt(i37);
-    }
-    return bytes.buffer;
 }
 function handleRequest(event) {
     return Promise.race([
@@ -7700,7 +7582,7 @@ async function proxyRequest(event) {
         const plugin = new RethinkPlugin(event);
         await plugin.executePlugin(currentRequest);
         const ua = event.request.headers.get("User-Agent");
-        if (fromBrowser(ua)) currentRequest.setCorsHeaders();
+        if (fromBrowser(ua)) currentRequest.setCorsHeadersIfNeeded();
         return currentRequest.httpResponse;
     } catch (err) {
         log.e(err.stack);
