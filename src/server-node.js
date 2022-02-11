@@ -11,11 +11,13 @@ import tls from "tls";
 import http2 from "http2";
 import { V1ProxyProtocol } from "proxy-protocol-js";
 import * as system from "./system.js";
-import { handleRequest } from "./index.js";
-import * as dnsutil from "./helpers/dnsutil.js";
-import * as util from "./helpers/util.js";
-import { copyNonPseudoHeaders } from "./helpers/node/util.js";
-import "./helpers/node/config.js";
+import { handleRequest } from "./core/doh.js";
+import * as bufutil from "./commons/bufutil.js";
+import * as dnsutil from "./commons/dnsutil.js";
+import * as envutil from "./commons/envutil.js";
+import * as nodeutil from "./core/node/util.js";
+import * as util from "./commons/util.js";
+import "./core/node/config.js";
 
 /**
  * @typedef {import("net").Socket} Socket
@@ -24,18 +26,6 @@ import "./helpers/node/config.js";
  * @typedef {import("http2").Http2ServerResponse} Http2ServerResponse
  */
 
-// Ports which the services are exposed on. Corresponds to fly.toml ports.
-const DOT_ENTRY_PORT = 10000;
-const DOH_ENTRY_PORT = 8080;
-
-const DOT_IS_PROXY_PROTO = eval(`process.env.DOT_HAS_PROXY_PROTO`);
-const DOT_PROXY_PORT = DOT_ENTRY_PORT; // Unused if proxy proto is disabled
-
-const DOT_PORT = DOT_IS_PROXY_PROTO
-  ? DOT_ENTRY_PORT + 1 // Bump DOT port to allow entry via proxy proto port.
-  : DOT_ENTRY_PORT;
-const DOH_PORT = DOH_ENTRY_PORT;
-
 let OUR_RG_DN_RE = null; // regular dns name match
 let OUR_WC_DN_RE = null; // wildcard dns name match
 
@@ -43,12 +33,14 @@ let log = null;
 
 ((main) => {
   system.sub("go", systemUp);
+  // ask prepare phase to commence
+  system.pub("prepare");
 })();
 
 function systemUp() {
   const tlsOpts = {
-    key: env.tlsKey,
-    cert: env.tlsCrt,
+    key: envutil.tlsKey(),
+    cert: envutil.tlsCrt(),
   };
 
   log = util.logger("NodeJs");
@@ -56,17 +48,19 @@ function systemUp() {
 
   const dot1 = tls
     .createServer(tlsOpts, serveTLS)
-    .listen(DOT_PORT, () => up("DoT", dot1.address()));
+    .listen(envutil.dotBackendPort(), () => up("DoT", dot1.address()));
 
   const dot2 =
-    DOT_IS_PROXY_PROTO &&
+    envutil.isDotOverProxyProto() &&
     net
       .createServer(serveDoTProxyProto)
-      .listen(DOT_PROXY_PORT, () => up("DoT ProxyProto", dot2.address()));
+      .listen(envutil.dotProxyProtoBackendPort(), () =>
+        up("DoT ProxyProto", dot2.address())
+      );
 
   const doh = http2
     .createSecureServer({ ...tlsOpts, allowHTTP1: true }, serveHTTPS)
-    .listen(DOH_PORT, () => up("DoH", doh.address()));
+    .listen(envutil.dohBackendPort(), () => up("DoH", doh.address()));
 
   function up(server, addr) {
     log.i(server, `listening on: [${addr.address}]:${addr.port}`);
@@ -98,9 +92,9 @@ function serveDoTProxyProto(clientSocket) {
   let ppHandled = false;
   log.d("--> new client Connection");
 
-  const dotSock = net.connect(DOT_PORT, () => {
-    log.d("DoT socket ready");
-  });
+  const dotSock = net.connect(envutil.dotBackendPort(), () =>
+    log.d("DoT socket ready")
+  );
 
   dotSock.on("error", (e) => {
     log.w("DoT socket error, closing client connection", e);
@@ -155,8 +149,8 @@ function serveDoTProxyProto(clientSocket) {
 }
 
 function makeScratchBuffer() {
-  const qlenBuf = util.createBuffer(dnsutil.dnsHeaderSize);
-  const qlenBufOffset = util.recycleBuffer(qlenBuf);
+  const qlenBuf = bufutil.createBuffer(dnsutil.dnsHeaderSize);
+  const qlenBufOffset = bufutil.recycleBuffer(qlenBuf);
 
   return {
     qlenBuf: qlenBuf,
@@ -219,14 +213,20 @@ function getDnRE(socket) {
 function getMetadata(sni) {
   // 1-flag.max.rethinkdns.com => ["1-flag", "max", "rethinkdns", "com"]
   const s = sni.split(".");
-  // ["1-flag", "max", "rethinkdns", "com"] => "max.rethinkdns.com"]
-  const host = s.splice(1).join(".");
-  // replace "-" with "+" as doh handlers use "+" to differentiate between
-  // a b32 flag and a b64 flag ("-" is a valid b64url char; "+" is not)
-  const flag = s[0].replace(/-/g, "+");
+  if (s.length > 3) {
+    // ["1-flag", "max", "rethinkdns", "com"] => "max.rethinkdns.com"]
+    const host = s.splice(1).join(".");
+    // replace "-" with "+" as doh handlers use "+" to differentiate between
+    // a b32 flag and a b64 flag ("-" is a valid b64url char; "+" is not)
+    const flag = s[0].replace(/-/g, "+");
 
-  log.d(`flag: ${flag}, host: ${host}`);
-  return [flag, host];
+    log.d(`flag: ${flag}, host: ${host}`);
+    return [flag, host];
+  } else {
+    // sni => max.rethinkdns.com
+    log.d(`flag: "", host: ${host}`);
+    return ["", sni];
+  }
 }
 
 /**
@@ -254,11 +254,12 @@ function serveTLS(socket) {
     return;
   }
 
-  log.d(`(${socket.getProtocol()}), tls reused? ${socket.isSessionReused()}}`);
+  log.d(`(${socket.getProtocol()}), tls reused? ${socket.isSessionReused()}`);
 
   const [flag, host] = isOurWcDn ? getMetadata(sni) : ["", sni];
   const sb = makeScratchBuffer();
 
+  log.d("----> DoT request", host, flag);
   socket.on("data", (data) => {
     handleTCPData(socket, data, sb, host, flag);
   });
@@ -311,8 +312,8 @@ function handleTCPData(socket, chunk, sb, host, flag) {
   const data = chunk.slice(rem);
 
   if (sb.qBuf === null) {
-    sb.qBuf = util.createBuffer(qlen);
-    sb.qBufOffset = util.recycleBuffer(sb.qBuf);
+    sb.qBuf = bufutil.createBuffer(qlen);
+    sb.qBufOffset = bufutil.recycleBuffer(sb.qBuf);
   }
 
   sb.qBuf.fill(data, sb.qBufOffset);
@@ -322,7 +323,7 @@ function handleTCPData(socket, chunk, sb, host, flag) {
   if (sb.qBufOffset === qlen) {
     handleTCPQuery(sb.qBuf, socket, host, flag);
     // reset qBuf and qlenBuf states
-    sb.qlenBufOffset = util.recycleBuffer(sb.qlenBuf);
+    sb.qlenBufOffset = bufutil.recycleBuffer(sb.qlenBuf);
     sb.qBuf = null;
     sb.qBufOffset = 0;
   } else if (sb.qBufOffset > qlen) {
@@ -346,21 +347,31 @@ async function handleTCPQuery(q, socket, host, flag) {
   const t = log.startTime("handle-tcp-query-" + rxid);
   try {
     const r = await resolveQuery(rxid, q, host, flag);
-    const rlBuf = util.encodeUint8ArrayBE(r.byteLength, 2);
-    const chunk = new Uint8Array([...rlBuf, ...r]);
+    if (bufutil.emptyBuf(r)) {
+      log.w("empty ans from resolve");
+      ok = false;
+    } else {
+      const rlBuf = bufutil.encodeUint8ArrayBE(r.byteLength, 2);
+      const chunk = new Uint8Array([...rlBuf, ...r]);
 
-    // writing to a destroyed socket crashes nodejs
-    if (!socket.destroyed) socket.write(chunk);
+      // writing to a destroyed socket crashes nodejs
+      if (!socket.destroyed) {
+        socket.write(chunk);
+      } else {
+        ok = false;
+        log.w("send fail, tcp socket destroyed");
+      }
+    }
   } catch (e) {
     ok = false;
-    log.w(e);
+    log.w("send fail, err", e);
   }
   log.endTime(t);
 
-  // Only close socket on error, else it would break pipelining of queries.
+  // close socket when !ok
   if (!ok && !socket.destroyed) {
     close(socket);
-  }
+  } // else: expect pipelined queries on the same socket
 }
 
 /**
@@ -370,21 +381,28 @@ async function handleTCPQuery(q, socket, host, flag) {
  * @return {Promise<Uint8Array>}
  */
 async function resolveQuery(rxid, q, host, flag) {
-  // Using POST, as GET requests are capped at 2KB, where-as DNS-over-TCP
-  // has a much higher ceiling (even if rarely used)
-  const r = await handleRequest({
-    request: new Request(`https://${host}/${flag}`, {
-      method: "POST",
-      headers: util.concatHeaders(
-        util.dnsHeaders(),
-        util.contentLengthHeader(q),
-        util.rxidHeader(rxid)
-      ),
-      body: q,
-    }),
+  // Using POST, since GET requests cannot be greater than 2KB,
+  // where-as DNS-over-TCP msgs could be upto 64KB in size.
+  const freq = new Request(`https://${host}/${flag}`, {
+    method: "POST",
+    headers: util.concatHeaders(
+      util.dnsHeaders(),
+      util.contentLengthHeader(q),
+      util.rxidHeader(rxid)
+    ),
+    body: q,
   });
 
-  return new Uint8Array(await r.arrayBuffer());
+  const r = await handleRequest(util.mkFetchEvent(freq));
+
+  const ans = await r.arrayBuffer();
+
+  if (!bufutil.emptyBuf(ans)) {
+    return new Uint8Array(ans);
+  } else {
+    log.w(rxid, host, "empty ans, send servfail; flags?", flag);
+    return dnsutil.servfailQ(q);
+  }
 }
 
 /**
@@ -401,7 +419,7 @@ async function serveHTTPS(req, res) {
   for await (const chunk of req) {
     buffers.push(chunk);
   }
-  const b = Buffer.concat(buffers);
+  const b = bufutil.concatBuf(buffers);
   const bLen = b.byteLength;
 
   log.endTime(t);
@@ -413,7 +431,7 @@ async function serveHTTPS(req, res) {
     return;
   }
 
-  log.d("-> HTTPS req", req.method, bLen);
+  log.d("----> DoH request", req.method, bLen);
   handleHTTPRequest(b, req, res);
 }
 
@@ -435,7 +453,7 @@ async function handleHTTPRequest(b, req, res) {
       ...req,
       headers: util.concatHeaders(
         util.rxidHeader(rxid),
-        copyNonPseudoHeaders(req.headers)
+        nodeutil.copyNonPseudoHeaders(req.headers)
       ),
       method: req.method,
       body: req.method === "POST" ? b : null,
@@ -443,7 +461,7 @@ async function handleHTTPRequest(b, req, res) {
 
     log.lapTime(t, "upstream-start");
 
-    const fRes = await handleRequest({ request: fReq });
+    const fRes = await handleRequest(util.mkFetchEvent(fReq));
 
     log.lapTime(t, "upstream-end");
 
@@ -451,12 +469,15 @@ async function handleHTTPRequest(b, req, res) {
 
     log.lapTime(t, "send-head");
 
-    const ans = Buffer.from(await fRes.arrayBuffer());
+    const ans = await fRes.arrayBuffer();
 
     log.lapTime(t, "recv-ans");
 
-    res.end(ans);
+    if (!bufutil.emptyBuf(ans)) {
+      res.end(bufutil.bufferOf(ans));
+    } // else: expect fRes.status to be set to non 2xx above
   } catch (e) {
+    res.writeHead(400); // bad request
     res.end();
     log.w(e);
   }

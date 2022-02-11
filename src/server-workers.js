@@ -6,32 +6,43 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import "./helpers/workers/config.js";
-import { handleRequest } from "./index.js";
+import "./core/workers/config.js";
+import { handleRequest } from "./core/doh.js";
 import * as system from "./system.js";
-import * as util from "./helpers/util.js";
+import * as util from "./commons/util.js";
 
-let up = false;
+export default {
+  // workers/runtime-apis/fetch-event#syntax-module-worker
+  async fetch(request, env, context) {
+    return await serveDoh(request, env, context);
+  },
+};
 
-((main) => {
-  if (typeof addEventListener === "undefined") {
-    throw new Error("workers env missing addEventListener");
-  }
+function serveDoh(request, env, ctx) {
+  // on Workers, the network-context is only available in an event listener
+  // and so, publish system prepare from here instead of from main which
+  // runs in global-scope.
+  system.pub("prepare", { env: env });
 
-  system.sub("go", systemUp);
+  const event = util.mkFetchEvent(
+    request,
+    null,
+    ctx.waitUntil.bind(ctx),
+    ctx.passThroughOnException.bind(ctx)
+  );
 
-  addEventListener("fetch", serveDoh);
-})();
-
-function systemUp() {
-  up = true;
-}
-
-function serveDoh(event) {
-  if (!up) {
-    event.respondWith(util.respond503());
-    return;
-  }
-
-  event.respondWith(handleRequest(event));
+  return new Promise((accept) => {
+    system
+      .when("go")
+      .then((v) => {
+        return handleRequest(event);
+      })
+      .then((response) => {
+        accept(response);
+      })
+      .catch((e) => {
+        console.error("server", "serveDoh err", e);
+        accept(util.respond405());
+      });
+  });
 }
