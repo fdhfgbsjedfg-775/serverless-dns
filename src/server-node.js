@@ -469,13 +469,18 @@ async function handleHTTPRequest(b, req, res) {
 
     log.lapTime(t, "send-head");
 
+    // ans may be null on non-2xx responses, such as redirects (3xx) by cc.js
+    // or 4xx responses on timeouts or 5xx on invalid http method
     const ans = await fRes.arrayBuffer();
 
     log.lapTime(t, "recv-ans");
 
     if (!bufutil.emptyBuf(ans)) {
       res.end(bufutil.bufferOf(ans));
-    } // else: expect fRes.status to be set to non 2xx above
+    } else {
+      // expect fRes.status to be set to non 2xx above
+      res.end();
+    }
   } catch (e) {
     res.writeHead(400); // bad request
     res.end();

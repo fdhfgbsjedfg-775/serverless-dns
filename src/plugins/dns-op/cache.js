@@ -7,12 +7,12 @@
  */
 
 import { LfuCache } from "@serverless-dns/lfu-cache";
-import { CacheApi } from "./cacheApi.js";
+import { CacheApi } from "./cache-api.js";
 import * as bufutil from "../../commons/bufutil.js";
 import * as dnsutil from "../../commons/dnsutil.js";
 import * as envutil from "../../commons/envutil.js";
 import * as util from "../../commons/util.js";
-import * as cacheutil from "../cacheutil.js";
+import * as cacheutil from "../cache-util.js";
 
 export class DnsCache {
   constructor(size) {
@@ -102,11 +102,11 @@ export class DnsCache {
 
     if (!k || !v) return;
 
-    this.localcache.Put(k, v);
+    this.localcache.put(k, v);
   }
 
   fromLocalCache(key) {
-    const res = this.localcache.Get(key);
+    const res = this.localcache.get(key);
 
     if (util.emptyObj(res)) return false;
 

@@ -23,12 +23,20 @@ export function onDenoDeploy() {
 export function onCloudflare() {
   if (!envManager) return false;
 
+  // wrangler imitates Workers runtime environment to a tee, and so
+  // checks like the one proposed here archive.is/Izftu do not work
   return envManager.get("CLOUD_PLATFORM") === "cloudflare";
 }
 
+export function onLocal() {
+  if (!envManager) return false;
+
+  return !onFly() && !onDenoDeploy() && !onCloudflare();
+}
+
 export function hasDisk() {
-  // got disk on test nodejs | deno envs and on fly
-  return onFly() || (isNode() && !isProd()) || (isDeno() && !isProd());
+  // got disk on fly and local deploys
+  return onFly() || onLocal();
 }
 
 export function hasDynamicImports() {
@@ -38,26 +46,6 @@ export function hasDynamicImports() {
 
 export function hasHttpCache() {
   return isWorkers();
-}
-
-export function isProd() {
-  if (!envManager) return false;
-
-  return deployMode() === "production";
-}
-
-export function deployMode(defaultMode = "") {
-  if (!envManager) return defaultMode;
-
-  if (isWorkers()) {
-    return envManager.get("WORKER_ENV");
-  } else if (isNode()) {
-    return envManager.get("NODE_ENV");
-  } else if (isDeno()) {
-    return envManager.get("DENO_ENV");
-  }
-
-  return defaultMode;
 }
 
 export function isWorkers() {

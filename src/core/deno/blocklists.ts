@@ -5,7 +5,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-import * as util from "../../commons/util.js";
 import * as bufutil from "../../commons/bufutil.js";
 import * as envutil from "../../commons/envutil.js";
 
@@ -75,7 +74,7 @@ function setupLocally(bw: any, timestamp: string, nodecount: number) {
 
   // TODO: file integrity checks
   // concat converts uint8array to an untyped arraybuffer
-  // that blocklist-wrapper expects, because the actual
+  // that the rethinkdns module expects, 'cause the actual
   // type required is uint16array for the trie
   const ab0 = bufutil.concat([tdbuf]);
   const ab1 = bufutil.concat([rdbuf]);
@@ -131,8 +130,8 @@ function mkdirsIfNeeded(timestamp: string) {
   let dinfo2 = null;
 
   try {
-    dinfo2 = Deno.statSync(dir1);
-    dinfo1 = Deno.statSync(dir2);
+    dinfo1 = Deno.statSync(dir1);
+    dinfo2 = Deno.statSync(dir2);
   } catch (ignored) {}
 
   if (!dinfo1 || !dinfo1.isDirectory) {

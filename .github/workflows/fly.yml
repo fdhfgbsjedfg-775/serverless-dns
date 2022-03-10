@@ -1,4 +1,4 @@
-name: 🪰 Fly
+name: 🪂 Fly
 
 on:
   push:
@@ -30,36 +30,59 @@ on:
         default: "dev"
 
 env:
+  GIT_REF: ${{ github.event.inputs.git-ref || github.ref }}
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-  FLY_APP: ${{ secrets.FLY_APP_NAME }} # default
+  # default fly app to deploy to (typically, dev)
+  FLY_APP: ${{ secrets.FLY_APP_NAME }}
+  FLY_PROD_APP: ${{ secrets.FLY_APP_NAME_LIVE }}
+  FLY_B1_APP: ${{secrets.FLY_APP_NAME_B1 }}
 
 jobs:
   deploy:
     name: 🚀 Deploy app
     runs-on: ubuntu-latest
     steps:
-      - name: 🚚 Get latest code
+      - name: 🚚 Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.git-ref || github.ref }}
-      - run: |
-          echo "GIT_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          ref: ${{ env.GIT_REF }}
 
-      - name: ⚠ *B1* Fly App ?
+      - name: 🏗 Git rev-parse
+        run: |
+          echo "GIT_HEAD=$(git rev-parse HEAD)" >> $GITHUB_ENV
+        shell: bash
+
+      - name: ⚠ B1 via dispatch?
         if: ${{ github.event_name == 'workflow_dispatch' &&
           github.event.inputs.deployment-type == 'b1' }}
         run: |
-          echo "FLY_APP=${{ secrets.FLY_APP_NAME_B1 }}" >> $GITHUB_ENV
-          echo "::notice::B1 deployment"
+          echo "FLY_APP=${FLY_B1_APP}" >> $GITHUB_ENV
+          echo "::notice::Deploying B1 / ${GIT_REF} @ ${COMMIT_SHA}"
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
 
-      - name: 🚨 *LIVE* Fly App ?
+      - name: 🚨 Prod via dispatch?
         if: ${{ github.event_name == 'workflow_dispatch' &&
           github.event.inputs.deployment-type == 'live' }}
         run: |
-          echo "FLY_APP=${{ secrets.FLY_APP_NAME_LIVE }}" >> $GITHUB_ENV
-          echo "::notice::Live deployment"
+          echo "FLY_APP=${FLY_PROD_APP}" >> $GITHUB_ENV
+          echo "::notice::Deploying PROD / ${GIT_REF} @ ${COMMIT_SHA}"
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
 
-      - name: 🏗 Build & 🚢 Ship
+      - name: 🚨 Prod via tag?
+        # docs.github.com/en/actions/learn-github-actions/contexts#github-context
+        if: github.ref_type == 'tag'
+        run: |
+          echo "FLY_APP=${FLY_PROD_APP}" >> $GITHUB_ENV
+          echo "::notice::Deploying PROD / ${GIT_REF} @ ${COMMIT_SHA}"
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+
+      - name: 🚢 Ship
         uses: superfly/flyctl-actions@1.1
         with:
           args: "deploy
@@ -67,5 +90,9 @@ jobs:
             --image-label ${{ env.GIT_HEAD }}
             --strategy rolling
             "
-      - run: |
-          echo "::notice::Image @ registry.fly.io/${{ env.FLY_APP }}:${{ env.GIT_HEAD }}"
+
+      - name: Registry
+        if: success()
+        run: |
+          echo "::notice::Image @ registry.fly.io/<fly-app-name>:${{ env.GIT_HEAD }}"
+        shell: bash
