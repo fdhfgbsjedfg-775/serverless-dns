@@ -2,9 +2,10 @@ app = ""
 
 kill_signal = "SIGINT"
 kill_timeout = 5
-# processes = []
 
 [env]
+# offload TLS to Fly.io's load balancers
+TLS_OFFLOAD = "true"
 DENO_ENV = "production"
 NODE_ENV = "production"
 CLOUD_PLATFORM = "fly"
@@ -15,23 +16,15 @@ TD_NODE_COUNT = "39790702"
 TD_PARTS = "2"
 CF_DNS_RESOLVER_URL = "https://cloudflare-dns.com/dns-query"
 CF_BLOCKLIST_DOWNLOAD_TIMEOUT = "10000"
-# DOT_HAS_PROXY_PROTO = "true"
 
 [experimental]
 allowed_public_ports = []
 auto_rollback = true
 
-# Don't use `[processes]`, undocumented and causes problems with [auto]scaling.
-# Instead, use CMD in Dockerfile.
-# [processes]
-# app = "run --allow-net --allow-env --import-map=import_map.json server-deno.ts"
-# app = "node server-node.js"
-
-# DNS over HTTP[S]
+# DNS over HTTPS (well, h2c and http1.1)
 [[services]]
 http_checks = []
-internal_port = 8080
-# processes = ["app"]
+internal_port = 8055
 protocol = "tcp"
 script_checks = []
 
@@ -41,7 +34,8 @@ script_checks = []
   type = "connections"
 
   [[services.ports]]
-  # handlers = ["proxy_proto"]
+  handlers = ["tls"]
+  tls_options = { alpn = ["h2", "http/1.1"] }
   port = 443
 
   [[services.tcp_checks]]
@@ -55,8 +49,7 @@ script_checks = []
 # DNS over TCP/TLS
 [[services]]
 http_checks = []
-internal_port = 10000
-# processes = ["app"]
+internal_port = 10555
 protocol = "tcp"
 script_checks = []
 
@@ -66,7 +59,8 @@ script_checks = []
   type = "connections"
 
   [[services.ports]]
-  # handlers = ["proxy_proto"]
+  # TODO: ProxyProto v2
+  handlers = ["tls"]
   port = 853
 
   [[services.tcp_checks]]

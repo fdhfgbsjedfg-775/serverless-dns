@@ -16,9 +16,9 @@ Server-side processing takes from 0 milliseconds (ms) to 2ms (median), and end-t
 
 ### Self-host
 
-Cloudflare Workers is the easiest platform to setup `serverless-dns`: 
+Cloudflare Workers is the easiest platform to setup `serverless-dns`:
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/serverless-dns/serverless-dns/)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/serverless-dns/serverless-dns)
 
 For step-by-step instructions, refer:
 
@@ -51,7 +51,7 @@ cd ./serverless-dns
 ```
 
 Node:
-```
+```bash
 # install node v16+ via nvm, if required
 # https://github.com/nvm-sh/nvm#installing-and-updating
 wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
@@ -65,26 +65,34 @@ npm update
 
 # run serverless-dns on node
 ./run n
+
+# run a clinicjs.org profiler
+./run n [cpu|fn|mem]
 ```
 
-Deno and Wrangler:
+Deno:
 ```bash
-# (optional) install Cloudflare Workers (cli) aka Wrangler
-# https://developers.cloudflare.com/workers/cli-wrangler/install-update
-npm i @cloudflare/wrangler -g
-
-# (optional) install deno.land v1.18+
+# install deno.land v1.18+
 # https://github.com/denoland/deno/#install
 curl -fsSL https://deno.land/install.sh | sh
 
-# (optional) run serverless-dns on deno
+# run serverless-dns on deno
 ./run d
+```
 
-# (optional) run serverless-dns on Cloudflare Workers (cli)
+Wrangler:
+```bash
+# install Cloudflare Workers (cli) aka Wrangler
+# https://developers.cloudflare.com/workers/cli-wrangler/install-update
+npm i @cloudflare/wrangler -g
+
+# run serverless-dns on Cloudflare Workers (cli)
 # Make sure to setup Wrangler first:
 # https://developers.cloudflare.com/workers/cli-wrangler/authentication
 ./run w
 
+# profile wrangler with Chrome DevTools
+# blog.cloudflare.com/profiling-your-workers-with-wrangler
 ```
 
 #### Code style
@@ -103,7 +111,7 @@ setup env vars in [`wrangler.toml`](wrangler.toml), instead.
 
 #### Request flow
 
-1. The request/response flow is: client <-> `src/server-[node|workers|deno]` <-> [`doh.js`](src/core/doh.js) <-> [`plugin.js`](src/core/plugin.js)
+1. The request/response flow: client <-> `src/server-[node|workers|deno]` <-> [`doh.js`](src/core/doh.js) <-> [`plugin.js`](src/core/plugin.js)
 2. The `plugin.js` flow: `userOperation.js` -> `cacheResponse.js` -> `cc.js` -> `dnsResolver.js`
 
 ----
@@ -120,21 +128,17 @@ The entrypoint for Node and Deno are [`src/server-node.js`](src/server-node.js),
 and both listen for TCP-over-TLS, HTTP/S connections; whereas, the entrypoint for Cloudflare Workers, which only listens over HTTP (cli) or
 over HTTP/S (prod), is [`src/server-workers.js`](src/server-workers.js).
 
-For prod setups on Deno and local (non-prod) setups on Node, the key (private) and cert (public chain)
+For prod setups on Deno and local (non-prod) setups on Node, the `key` (private) and `cert` (public chain)
 files, by default, are read from paths defined in env vars, `TLS_KEY_PATH` and `TLS_CRT_PATH`.
 
-Whilst for prod setup on Node, the key and cert _must_ be
-_base64_ encoded in env var via `TLS_CN` ([ref](https://github.com/serverless-dns/serverless-dns/blob/15f62846/src/core/node/config.js#L61-L82)), like so:
+Whilst for prod setup on Node (on Fly.io), either `TLS_OFFLOAD` must be set to `true` or `key` and `cert` _must_ be
+_base64_ encoded in env var `TLS_CERTKEY` ([ref](https://github.com/serverless-dns/serverless-dns/blob/f57c579/src/core/node/config.js#L61-L92)), like so:
 
 ```bash
-# defines the domain name in uppercase for which certs have to be loaded for
-# period '.' is subst with `_`, ie, d1.rethinkdns.com is:
-TLS_CN="D1_RETHINKDNS_COM"
-
-# base64 representation of both key (private) and cert (public chain)
-D1_RETHINKDNS_COM="KEY=b64_key_content\nCRT=b64_cert_content"
-
-# note: The env var name "D1_RETHINKDNS_COM" the value stored in env var, TLS_CN
+# EITHER: offload tls to fly.io and set tls_offload to true
+TLS_OFFLOAD="true"
+# OR: base64 representation of both key (private) and cert (public chain)
+TLS_CERTKEY="KEY=b64_key_content\nCRT=b64_cert_content"
 ```
 
 _Process_ bringup is different for each of these runtimes: For Node, [`src/core/node/config.js`](src/core/node/config.js) governs the _bringup_;
@@ -157,9 +161,12 @@ Cloudflare Workers build-time and runtime configurations are defined in [`wrangl
 For Deno Deploy, the code-base is bundled up in a single javascript file with `deno bundle` and then handed off
 to Deno.com.
 
-For Fly.io, which runs Node, the runtime directives are defined in [`fly.toml`](fly.toml), while deploy directives
-are in [`node.Dockerfile`](node.Dockerfile). [`flyctl`](https://fly.io/docs/flyctl) accordingly sets up `serverless-dns`
-on Fly.io's infrastructure.
+For Fly.io, which runs Node, the runtime directives are defined in [`fly.toml`](fly.toml) (used by `dev` and `live` deployment-types),
+while deploy directives are in [`node.Dockerfile`](node.Dockerfile). [`flyctl`](https://fly.io/docs/flyctl) accordingly sets
+up `serverless-dns` on Fly.io's infrastructure.
+
+For deploys offloading TLS termination to Fly.io (`B1` deployment-type), the runtime directives are instead defined in
+[`fly.tls.toml`](fly.tls.toml), which sets up HTTP2 Cleartext and HTTP/1.1 on port 443, and DNS over TCP on port 853.
 
 Ref: _[github/workflows](.github/workflows)_.
 

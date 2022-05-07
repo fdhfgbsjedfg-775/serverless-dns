@@ -9,6 +9,7 @@
 import { services } from "./svc.js";
 import * as bufutil from "../commons/bufutil.js";
 import * as dnsutil from "../commons/dnsutil.js";
+import * as envutil from "../commons/envutil.js";
 import * as util from "../commons/util.js";
 
 export default class RethinkPlugin {
@@ -68,8 +69,8 @@ export default class RethinkPlugin {
         "rxid",
         "dispatcher",
         "request",
-        "userDnsResolverUrl",
         // resolver-url overriden by user-op
+        "userDnsResolverUrl",
         "userBlocklistInfo",
         "domainBlockstamp",
         "requestDecodedDnsPacket",
@@ -100,19 +101,18 @@ export default class RethinkPlugin {
     });
   }
 
-  async executePlugin(req) {
-    await this.setRequest(req);
-
+  async execute() {
+    const io = this.io;
     const rxid = this.parameter.get("rxid");
 
     const t = this.log.startTime("exec-plugin-" + rxid);
 
     for (const p of this.plugin) {
-      if (req.stopProcessing && !p.continueOnStopProcess) {
+      if (io.stopProcessing && !p.continueOnStopProcess) {
         continue;
       }
 
-      this.log.lapTime(t, rxid, p.name, "send-req");
+      this.log.lapTime(t, rxid, p.name, "send-io");
 
       const res = await p.module.RethinkModule(
         generateParam(this.parameter, p.param)
@@ -120,8 +120,8 @@ export default class RethinkPlugin {
 
       this.log.lapTime(t, rxid, p.name, "got-res");
 
-      if (p.callBack) {
-        await p.callBack.call(this, res, req);
+      if (typeof p.callBack === "function") {
+        await p.callBack.call(this, res, io);
       }
 
       this.log.lapTime(t, rxid, p.name, "post-callback");
@@ -159,9 +159,12 @@ export default class RethinkPlugin {
       this.log.w(rxid, "unexpected err userOp", r);
       this.loadException(rxid, response, io);
     } else if (!util.emptyObj(r)) {
-      // r.userBlocklistInfo and r.dnsResolverUrl are never "null"
-      this.registerParameter("userBlocklistInfo", r.userBlocklistInfo);
-      this.registerParameter("userDnsResolverUrl", r.dnsResolverUrl);
+      // r.userBlocklistInfo and r.dnsResolverUrl may be "null"
+      const bi = r.userBlocklistInfo;
+      const rr = r.dnsResolverUrl;
+      this.log.d(rxid, "set user:blockInfo/resolver", bi, rr);
+      this.registerParameter("userBlocklistInfo", bi);
+      this.registerParameter("userDnsResolverUrl", rr);
     } else {
       this.log.i(rxid, "user-op is a no-op, possibly a command-control req");
     }
@@ -226,15 +229,18 @@ export default class RethinkPlugin {
     io.dnsExceptionResponse(response);
   }
 
-  async setRequest(io) {
+  async initIoState(io) {
+    this.io = io;
+
     const request = this.parameter.get("request");
-    const isDnsMsg = util.isDnsMsg(request);
     const rxid = this.parameter.get("rxid");
+    const isDnsMsg = util.isDnsMsg(request);
+    const isGwReq = util.isGatewayRequest(request);
+    let question = null;
 
     io.id(rxid);
 
     this.registerParameter("isDnsMsg", isDnsMsg);
-
     // nothing to do if the current request isn't a dns question
     if (!isDnsMsg) {
       // throw away any request that is not a dns-msg since cc.js
@@ -243,18 +249,34 @@ export default class RethinkPlugin {
       if (!util.isGetRequest(request)) {
         this.log.i(rxid, "not a dns-msg, not a GET req either", request);
         io.hResponse(util.respond405());
+        return;
       }
-      return;
     }
 
-    const question = await extractDnsQuestion(request);
-    const questionPacket = dnsutil.decode(question);
+    // else: treat doh as if it was a dns-msg iff "dns" query-string is set
+    question = await extractDnsQuestion(request);
 
-    this.log.d(rxid, "cur-ques", JSON.stringify(questionPacket.questions));
+    // not a dns request
+    if (bufutil.emptyBuf(question)) return;
 
-    io.decodedDnsPacket = questionPacket;
-    this.registerParameter("requestDecodedDnsPacket", questionPacket);
-    this.registerParameter("requestBodyBuffer", question);
+    if (isGwReq) io.gatewayAnswersOnly(envutil.gwip4(), envutil.gwip6());
+
+    try {
+      const questionPacket = dnsutil.decode(question);
+      this.registerParameter("isDnsMsg", true);
+      this.log.d(rxid, "cur-ques", JSON.stringify(questionPacket.questions));
+      io.decodedDnsPacket = questionPacket;
+
+      this.registerParameter("requestDecodedDnsPacket", questionPacket);
+      this.registerParameter("requestBodyBuffer", question);
+    } catch (e) {
+      // err if question is not a valid dns-packet
+      this.log.d(rxid, "cannot decode dns query; may be cc GET req?");
+      // TODO: io.hResponse(util.respond400()) instead?
+      // at this point: req is GET and has "dns" in its url-string
+      // but: is not a valid dns request
+      return;
+    }
   }
 }
 

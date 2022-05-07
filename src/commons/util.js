@@ -52,9 +52,10 @@ export function browserHeaders() {
 
 /**
  * @param {String} ua - User Agent string
+ * ex: Mozilla/5.0 (X11; U; L x86_64; rv:98.0) Gecko/101 Fx/98.0,gzip(gfe)
  * @return {Object} - Headers
  */
-export function dohHeaders(ua) {
+export function dohHeaders(ua = "Mozilla/5.0") {
   return Object.assign(dnsHeaders(), corsHeadersIfNeeded(ua));
 }
 
@@ -261,6 +262,10 @@ export function safeBox(fns, arg) {
   return r;
 }
 
+export function isDohGetRequest(queryString) {
+  return queryString && queryString.has("dns");
+}
+
 /**
  * @param {Request} req - Request
  * @return {Boolean}
@@ -351,6 +356,7 @@ export function respond400() {
   return new Response(null, {
     status: 400,
     statusText: "Bad Request",
+    headers: dohHeaders(),
   });
 }
 
@@ -358,19 +364,21 @@ export function respond405() {
   return new Response(null, {
     status: 405,
     statusText: "Method Not Allowed",
+    headers: dohHeaders(),
   });
 }
 
 export function respond408() {
   return new Response(null, {
     status: 408, // timeout
+    headers: dohHeaders(),
   });
 }
 
 export function respond503() {
   return new Response(null, {
     status: 503, // unavailable
-    headers: dnsHeaders(),
+    headers: dohHeaders(),
   });
 }
 
@@ -386,6 +394,25 @@ export function isPostRequest(req) {
 
 export function isGetRequest(req) {
   return req && !emptyString(req.method) && req.method.toUpperCase() === "GET";
+}
+
+export function isGatewayRequest(req) {
+  if (!req || emptyString(req.url)) return false;
+
+  const u = new URL(req.url);
+  const paths = u.pathname.split("/");
+  for (const p of paths) {
+    if (isGatewayQuery(p)) return true;
+  }
+  return false;
+}
+
+export function isDnsQuery(p) {
+  return p === "dns-query";
+}
+
+export function isGatewayQuery(p) {
+  return p === "gateway";
 }
 
 export function mkFetchEvent(r, ...fns) {
