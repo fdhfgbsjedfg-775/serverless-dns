@@ -13,7 +13,7 @@ import * as h2c from "httpx-server";
 import { V1ProxyProtocol } from "proxy-protocol-js";
 import * as system from "./system.js";
 import { handleRequest } from "./core/doh.js";
-import { stopAfter } from "./core/svc.js";
+import { stopAfter, uptime } from "./core/svc.js";
 import * as bufutil from "./commons/bufutil.js";
 import * as dnsutil from "./commons/dnsutil.js";
 import * as envutil from "./commons/envutil.js";
@@ -32,7 +32,7 @@ let OUR_RG_DN_RE = null; // regular dns name match
 let OUR_WC_DN_RE = null; // wildcard dns name match
 
 let log = null;
-
+let noreqs = -1;
 let listeners = [];
 
 ((main) => {
@@ -44,11 +44,12 @@ let listeners = [];
   system.pub("prepare");
 })();
 
-function systemDown() {
-  log.i("rcv stop signal, stopping servers", listeners.length);
+async function systemDown() {
+  log.i(noreqs, "rcv stop signal; uptime", uptime() / 1000, "secs");
 
   const srvs = listeners;
   listeners = [];
+
   srvs.forEach((s) => {
     if (!s) return;
     const saddr = s.address();
@@ -56,13 +57,36 @@ function systemDown() {
     // TODO: drain all sockets stackoverflow.com/a/14636625
     s.close(() => down(saddr));
   });
+
+  // in some cases, node stops listening but the process doesn't exit because
+  // of other unreleased resources (see: svc.js#systemStop). ideally, fly.io
+  // health checks kick-in and apply a pre-defined restart policy, but as it
+  // stands, health checks are unimplemented for machines, and so we wait for
+  // a small amount of time, and force exit the process. the irony is, this
+  // timed wait here will keep up the node process for longer than necessary.
+  // in other cases where systemDown might be called due to interrupts such as
+  // SIGINT, there's already a pre-defined timeout (10s or so) after which
+  // fly.io init process should mop it up, regardless of what goes on in here.
+  // FIXME rid of this delayed-exit once fly.io has health checks in place.
+  // refs: community.fly.io/t/7341/6 and community.fly.io/t/7289
+  util.timeout(/* 2s*/ 2 * 1000, () => {
+    log.i("game over");
+    // exit success aka 0; ref: community.fly.io/t/4547/6
+    process.exit(0);
+  });
 }
 
 function systemUp() {
   log = util.logger("NodeJs");
   if (!log) throw new Error("logger unavailable on system up");
 
+  const onlydownload = envutil.blocklistDownloadOnly();
   const tlsoffload = envutil.isCleartext();
+
+  if (onlydownload) {
+    log.i("in download mode, not running the dns resolver");
+    return;
+  }
 
   if (tlsoffload) {
     // fly.io terminated tls?
@@ -268,7 +292,7 @@ function getDnRE(socket) {
 
   const rgDnRE = new RegExp(regExs[0].join("|") || "(?!)", "i");
   const wcDnRE = new RegExp(regExs[1].join("|") || "(?!)", "i");
-  log.i(rgDnRE, wcDnRE);
+  log.d(rgDnRE, wcDnRE);
   return [rgDnRE, wcDnRE];
 }
 
@@ -589,6 +613,11 @@ async function handleHTTPRequest(b, req, res) {
 }
 
 function machinesHeartbeat() {
+  // increment no of requests
+  noreqs += 1;
+  if (noreqs % 100 === 0) {
+    log.i(noreqs, "requests so far in", uptime() / 1000, "secs");
+  }
   // nothing to do, if not on fly
   if (!envutil.onFly()) return;
   // if a fly machine app, figure out ttl

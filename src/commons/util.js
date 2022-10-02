@@ -77,6 +77,12 @@ export function rxidFromHeader(h) {
   return h.get("x-rethinkdns-rxid");
 }
 
+// developers.cloudflare.com/workers/runtime-apis/request
+export function regionFromCf(req) {
+  if (!req || !req.cf) return "";
+  return req.cf.colo || "";
+}
+
 /**
  * @param {Request} request - Request
  * @return {Object} - Headers
@@ -151,7 +157,7 @@ export function timedSafeAsyncOp(promisedOp, ms, defaultOp) {
   return new Promise((resolve, reject) => {
     let timedout = false;
 
-    const defferedOp = () => {
+    const deferredOp = () => {
       defaultOp()
         .then((v) => {
           resolve(v);
@@ -162,7 +168,7 @@ export function timedSafeAsyncOp(promisedOp, ms, defaultOp) {
     };
     const tid = timeout(ms, () => {
       timedout = true;
-      defferedOp();
+      deferredOp();
     });
 
     promisedOp()
@@ -173,7 +179,7 @@ export function timedSafeAsyncOp(promisedOp, ms, defaultOp) {
         }
       })
       .catch((ignored) => {
-        if (!timedout) defferedOp();
+        if (!timedout) deferredOp();
         // else: handled by timeout
       });
   });
